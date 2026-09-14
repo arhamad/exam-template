@@ -10,7 +10,8 @@
     <link rel="stylesheet" href="@Assets["app.css"]"/>
     <link rel="stylesheet" href="@Assets["ExamTemplate.styles.css"]"/>
     <ImportMap/>
-    <link rel="icon" type="image/png" href="favicon.png"/>
+    @* The university logo. Fingerprinted, so browsers that cached the previous icon pick up a new one. *@
+    <link rel="icon" type="image/png" sizes="64x64" href="@Assets["favicon.png"]"/>
     <HeadOutlet @rendermode="PageRenderMode"/>
 </head>
 

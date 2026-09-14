@@ -218,7 +218,8 @@ words take the taller Arabic line height.
 - **QuestPDF** runs under its Community licence (see `QuestPdfSetup`). Check that your institution qualifies at
   <https://www.questpdf.com/license/>, or configure a commercial licence there.
 - **The logo** (`Assets/Images/university-logo.png`) is only 120 × 117 px. For sharper printing, replace it with a
-  higher-resolution file of the same name. The web UI uses its own copy, `wwwroot/images/qou-logo.png`.
+  higher-resolution file of the same name. The web UI uses its own copy, `wwwroot/images/qou-logo.png`, and shows the
+  same logo on a transparent 64 × 64 square as the browser tab icon (`wwwroot/favicon.png`).
 
 ## Privacy
 
