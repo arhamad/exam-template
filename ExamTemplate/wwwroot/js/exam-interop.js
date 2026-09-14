@@ -48,6 +48,7 @@ export function getDraftInfo() {
 }
 
 // Returned as bytes so .NET reads it as a stream (IJSStreamReference) instead of one SignalR message.
+// A stream reference can't be empty, so "no draft" is sent as a single space.
 export function loadDraft() {
     let json = null;
     try {
@@ -56,7 +57,7 @@ export function loadDraft() {
         json = null;
     }
 
-    return new TextEncoder().encode(json ?? '');
+    return new TextEncoder().encode(json || ' ');
 }
 
 export function clearDraft() {

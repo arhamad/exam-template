@@ -47,15 +47,17 @@ public sealed class BrowserInterop(IJSRuntime js) : IAsyncDisposable
     public async Task<ExamDefinition?> LoadDraftAsync()
     {
         await using var data = await (await GetModuleAsync()).InvokeAsync<IJSStreamReference>("loadDraft");
-        if (data.Length == 0)
-            return null;
-
         if (data.Length > MaxDraftBytes)
             throw new ExamJsonException("المسودة المحفوظة أكبر من الحجم المسموح به.");
 
         await using var stream = await data.OpenReadStreamAsync(MaxDraftBytes);
         using var buffer = new MemoryStream((int)data.Length);
         await stream.CopyToAsync(buffer);
+
+        // JS stream references can't be empty, so the module sends whitespace when there is no draft.
+        if (buffer.GetBuffer().AsSpan(0, (int)buffer.Length).Trim(" \t\r\n"u8).IsEmpty)
+            return null;
+
         buffer.Position = 0;
         return ExamJson.Deserialize(buffer);
     }
