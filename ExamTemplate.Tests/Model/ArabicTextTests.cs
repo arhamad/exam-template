@@ -60,21 +60,6 @@ public class ArabicTextTests
         }
     }
 
-    [Fact]
-    public void Option_labels_follow_abjad_order() =>
-        Assert.Equal(new[] { "أ", "ب", "ج", "د", "هـ", "و", "ز", "ح" }, Enumerable.Range(0, 8).Select(ArabicText.OptionLabel));
-
-    [Fact]
-    public void Option_label_beyond_the_supported_range_throws() =>
-        Assert.Throws<ArgumentOutOfRangeException>(() => ArabicText.OptionLabel(8));
-
-    [Fact]
-    public void Versions_have_arabic_letters_and_latin_letters()
-    {
-        Assert.Equal(new[] { "أ", "ب", "ج", "د" }, Enumerable.Range(0, 4).Select(ArabicText.VersionLetter));
-        Assert.Equal("ABCD", string.Concat(Enumerable.Range(0, 4).Select(ArabicText.VersionLatin)));
-    }
-
     [Theory]
     [InlineData(QuestionType.MultipleChoice, "اختيار من متعدد")]
     [InlineData(QuestionType.TrueFalse, "صح أو خطأ")]

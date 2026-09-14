@@ -17,6 +17,7 @@ public enum OptionLayout
 
 /// <summary>One printable version of an exam: shuffled, numbered, and with all display text prepared for the renderers.</summary>
 public sealed record ExamPaper(
+    ExamLanguage Language,
     int VersionIndex,
     string VersionLetter,
     char VersionLatin,
@@ -68,5 +69,5 @@ public sealed record PaperQuestion(
 
 public sealed record PaperOption(string Label, string Text, bool IsCorrect);
 
-/// <summary>An objective question's answer for the key's summary table ("ج", "صح", "خطأ").</summary>
+/// <summary>An objective question's answer for the key's summary table ("ج", "صح", "True").</summary>
 public sealed record AnswerSummaryEntry(int Number, string Answer);

@@ -18,7 +18,7 @@ public static class DemoExams
             AcademicYear = "2026/2027",
             Duration = "ساعة ونصف",
         },
-        Instructions = [.. ExamDefinition.DefaultInstructions],
+        Instructions = [.. ExamDefaults.Arabic.Instructions],
         VersionCount = 2,
         ShuffleSeed = 12345,
         Sections =
@@ -81,7 +81,7 @@ public static class DemoExams
             ExamMode = "",
             ExamDate = new DateOnly(2027, 1, 15),
         },
-        Instructions = [.. ExamDefinition.DefaultInstructions, "اكتب/ي الرموز كما هي: x_1 + x_2 ≤ 2³ و 5*4*2 = 40 و {{CourseName}}."],
+        Instructions = [.. ExamDefaults.Arabic.Instructions, "اكتب/ي الرموز كما هي: x_1 + x_2 ≤ 2³ و 5*4*2 = 40 و {{CourseName}}."],
         VersionCount = 2,
         ShuffleSeed = 2026,
         Sections =

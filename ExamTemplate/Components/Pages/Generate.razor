@@ -85,7 +85,7 @@ else
                     var value = count;
                     <input type="radio" class="btn-check" name="version-count" id="@($"versions-{value}")" autocomplete="off"
                            checked="@(exam.VersionCount == value)" disabled="@isBusy" @onchange="() => SetVersionCountAsync(value)"/>
-                    <label class="btn btn-outline-primary" for="@($"versions-{value}")">@VersionCountLabel(value)</label>
+                    <label class="btn btn-outline-primary" for="@($"versions-{value}")">@VersionCountLabel(value, exam.Language)</label>
                 }
             </div>
             <FieldIssues Issues="validation.ForField(nameof(ExamDefinition.VersionCount))" Id="issues-VersionCount"/>
@@ -128,7 +128,7 @@ else
             @for (var index = 0; index < exam.VersionCount; index++)
             {
                 var versionIndex = index;
-                var letter = ArabicText.VersionLetter(versionIndex);
+                var letter = PaperWording.For(exam.Language).VersionLetter(versionIndex);
                 <div class="paper-row">
                     <div class="paper-version">
                         <span class="version-letter" aria-hidden="true">@letter</span>
@@ -237,9 +237,9 @@ else
 
     private static string JobKey(int versionIndex, PaperKind kind, string action) => $"{versionIndex}-{kind}-{action}";
 
-    private static string VersionCountLabel(int count)
+    private static string VersionCountLabel(int count, ExamLanguage language)
     {
-        var letters = string.Join("، ", Enumerable.Range(0, count).Select(ArabicText.VersionLetter));
+        var letters = string.Join("، ", Enumerable.Range(0, count).Select(PaperWording.For(language).VersionLetter));
         return count switch
         {
             1 => $"نموذج واحد ({letters})",
@@ -317,7 +317,7 @@ else
                 return;
             }
 
-            preview = new Preview(url, $"{KindLabel(kind)} للنموذج {ArabicText.VersionLetter(versionIndex)}");
+            preview = new Preview(url, $"{KindLabel(kind)} للنموذج {PaperWording.For(snapshot.Language).VersionLetter(versionIndex)}");
             FocusAfterRender("preview");
         });
 

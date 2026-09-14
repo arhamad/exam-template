@@ -12,7 +12,9 @@ public class ExamModelTests
 
         var section = Assert.Single(exam.Sections);
         Assert.Empty(section.Questions);
-        Assert.Equal(ExamDefinition.DefaultInstructions, exam.Instructions);
+        Assert.Equal(ExamDefaults.Arabic.Instructions, exam.Instructions);
+        Assert.Equal(ExamLanguage.Arabic, exam.Language);
+        Assert.Equal("جامعة القدس المفتوحة", exam.Header.UniversityName);
         Assert.Equal(1, exam.VersionCount);
         Assert.Equal(ExamDefinition.CurrentSchemaVersion, exam.SchemaVersion);
     }

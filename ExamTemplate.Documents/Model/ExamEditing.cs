@@ -51,6 +51,35 @@ public static class ExamEditing
             option.IsCorrect = option.Id == optionId;
     }
 
+    /// <summary>
+    /// Switches the exam language. Header fields and the instruction list that still hold the old language's defaults
+    /// take the new language's defaults, and a listed exam mode keeps its meaning. Anything the author wrote stays.
+    /// </summary>
+    public static void ChangeLanguage(ExamDefinition exam, ExamLanguage language)
+    {
+        if (exam.Language == language)
+            return;
+
+        var (from, to) = (ExamDefaults.For(exam.Language), ExamDefaults.For(language));
+        var header = exam.Header;
+
+        header.UniversityName = Swap(header.UniversityName, from.UniversityName, to.UniversityName);
+        header.ExamTitle = Swap(header.ExamTitle, from.ExamTitle, to.ExamTitle);
+        header.Semester = Swap(header.Semester, from.Semester, to.Semester);
+        header.Duration = Swap(header.Duration, from.Duration, to.Duration);
+
+        var mode = from.ExamModes.ToList().IndexOf(header.ExamMode);
+        if (mode >= 0)
+            header.ExamMode = to.ExamModes[mode];
+
+        if (exam.Instructions.SequenceEqual(from.Instructions))
+            exam.Instructions = [.. to.Instructions];
+
+        exam.Language = language;
+
+        static string Swap(string value, string oldDefault, string newDefault) => value == oldDefault ? newDefault : value;
+    }
+
     /// <summary>The question's 1-based number across all sections, or 0 when it isn't in the exam.</summary>
     public static int NumberOf(ExamDefinition exam, Guid questionId)
     {

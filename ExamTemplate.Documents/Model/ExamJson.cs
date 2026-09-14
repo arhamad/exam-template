@@ -73,7 +73,9 @@ public static class ExamJson
     private static void CheckStructure(ExamDefinition exam)
     {
         // Nullable annotations aren't enforced for list elements, so hand-edited files can still contain nulls.
-        if (exam.Instructions.Any(instruction => instruction is null)
+        // The enum converter also accepts numbers, so a language like 9 gets this far.
+        if (!Enum.IsDefined(exam.Language)
+            || exam.Instructions.Any(instruction => instruction is null)
             || exam.Sections.Any(section => section is null
                 || section.Questions.Any(question => question is null || question.Options.Any(option => option is null))))
         {

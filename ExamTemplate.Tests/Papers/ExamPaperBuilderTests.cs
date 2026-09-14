@@ -88,7 +88,7 @@ public class ExamPaperBuilderTests
                 var correct = Assert.Single(question.Options, o => o.IsCorrect);
                 Assert.Equal(source.Options.Single(o => o.IsCorrect).Text, correct.Text);
                 Assert.Equal($"{correct.Label}) {correct.Text}", question.CorrectAnswerText);
-                Assert.Equal(Enumerable.Range(0, question.Options.Count).Select(ArabicText.OptionLabel), question.Options.Select(o => o.Label));
+                Assert.Equal(Enumerable.Range(0, question.Options.Count).Select(PaperWording.Arabic.OptionLabel), question.Options.Select(o => o.Label));
                 Assert.Equal(source.Options.Select(o => o.Text).Order(), question.Options.Select(o => o.Text).Order());
             }
         }
@@ -243,6 +243,27 @@ public class ExamPaperBuilderTests
 
         Assert.Equal(new[] { "أ", "ب", "ج" }, papers.Select(p => p.VersionLetter));
         Assert.Equal("ABC", string.Concat(papers.Select(p => p.VersionLatin)));
+    }
+
+    [Fact]
+    public void English_papers_use_english_letters_and_wording()
+    {
+        var exam = TestExams.Valid();
+        exam.Language = ExamLanguage.English;
+        exam.VersionCount = 2;
+
+        var paper = ExamPaperBuilder.Build(exam, 1);
+        var choice = Questions(paper).Single(question => question.Type == QuestionType.MultipleChoice);
+        var trueFalse = Questions(paper).Single(question => question.Type == QuestionType.TrueFalse);
+
+        Assert.Equal(ExamLanguage.English, paper.Language);
+        Assert.Equal(("B", 'B'), (paper.VersionLetter, paper.VersionLatin));
+        Assert.Equal("3 questions", paper.QuestionCountText);
+        Assert.Equal("30 marks", paper.TotalMarksText);
+        Assert.Equal(new[] { "A", "B", "C", "D" }, choice.Options.Select(option => option.Label));
+        Assert.Equal("10 marks", choice.MarksText);
+        Assert.Equal("True", trueFalse.CorrectAnswerText);
+        Assert.Contains(new AnswerSummaryEntry(trueFalse.Number, "True"), paper.AnswerSummary);
     }
 
     private static ExamDefinition Demo(int versions = 4)

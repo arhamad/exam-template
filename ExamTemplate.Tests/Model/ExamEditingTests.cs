@@ -110,6 +110,53 @@ public class ExamEditingTests
     }
 
     [Fact]
+    public void ChangeLanguage_replaces_untouched_defaults_and_keeps_authored_text()
+    {
+        var exam = ExamDefinition.CreateNew(new DateOnly(2026, 9, 14));
+        exam.Header.ExamTitle = "الامتحان النصفي";
+        exam.Header.CourseName = "تصميم منطق الحاسوب";
+        exam.Header.ExamMode = "عملي";
+
+        ExamEditing.ChangeLanguage(exam, ExamLanguage.English);
+
+        Assert.Equal(ExamLanguage.English, exam.Language);
+        Assert.Equal("Al-Quds Open University", exam.Header.UniversityName);
+        Assert.Equal("الامتحان النصفي", exam.Header.ExamTitle);
+        Assert.Equal("تصميم منطق الحاسوب", exam.Header.CourseName);
+        Assert.Equal("First Semester", exam.Header.Semester);
+        Assert.Equal("1.5 hours", exam.Header.Duration);
+        Assert.Equal("Practical", exam.Header.ExamMode);
+        Assert.Equal("2026/2027", exam.Header.AcademicYear);
+        Assert.Equal(ExamDefaults.English.Instructions, exam.Instructions);
+    }
+
+    [Fact]
+    public void ChangeLanguage_keeps_edited_instructions_and_unlisted_exam_modes()
+    {
+        var exam = ExamDefinition.CreateNew(new DateOnly(2026, 9, 14));
+        exam.Instructions.Add("تعليمة إضافية.");
+        exam.Header.ExamMode = "";
+        var instructions = exam.Instructions.ToList();
+
+        ExamEditing.ChangeLanguage(exam, ExamLanguage.English);
+
+        Assert.Equal(instructions, exam.Instructions);
+        Assert.Equal("", exam.Header.ExamMode);
+    }
+
+    [Fact]
+    public void ChangeLanguage_there_and_back_restores_the_original_exam()
+    {
+        var exam = ExamDefinition.CreateNew(new DateOnly(2026, 9, 14));
+        var original = ExamJson.Serialize(exam);
+
+        ExamEditing.ChangeLanguage(exam, ExamLanguage.English);
+        ExamEditing.ChangeLanguage(exam, ExamLanguage.Arabic);
+
+        Assert.Equal(original, ExamJson.Serialize(exam));
+    }
+
+    [Fact]
     public void NumberOf_counts_questions_continuously_across_sections()
     {
         var exam = TestExams.TwoSections();

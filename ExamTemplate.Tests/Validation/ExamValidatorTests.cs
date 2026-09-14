@@ -290,6 +290,34 @@ public class ExamValidatorTests
     }
 
     [Fact]
+    public void English_exams_name_their_own_letters_in_the_clustering_warning()
+    {
+        var exam = TestExams.Valid();
+        exam.Language = ExamLanguage.English;
+        exam.Sections[0].Questions.AddRange(
+            Enumerable.Range(1, 3).Select(i => TestExams.Mcq($"Question {i}", 5, 2, "One", "Two", "Three", "Four")));
+
+        var message = SingleWarning(exam).Message;
+
+        Assert.Contains("(A)", message);
+        Assert.Contains("(C)", message);
+    }
+
+    [Theory]
+    [InlineData("All of the above")]
+    [InlineData("None of these")]
+    [InlineData("Both A and B")]
+    public void English_position_dependent_options_warn_when_versions_shuffle_them(string text)
+    {
+        var exam = TestExams.Valid();
+        exam.Language = ExamLanguage.English;
+        exam.VersionCount = 2;
+        exam.Sections[0].Questions[0].Options[3].Text = text;
+
+        Assert.Equal(nameof(ExamQuestion.KeepOptionOrder), SingleWarning(exam).Field);
+    }
+
+    [Fact]
     public void Messages_number_questions_continuously_across_sections()
     {
         var exam = TestExams.TwoSections();

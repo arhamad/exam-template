@@ -33,6 +33,7 @@ public static class ExamPaperBuilder
 
     private static ExamPaper BuildVersion(ExamDefinition exam, int versionIndex)
     {
+        var wording = PaperWording.For(exam.Language);
         var sections = new List<PaperSection>(exam.Sections.Count);
         var number = 0;
 
@@ -40,42 +41,43 @@ public static class ExamPaperBuilder
         {
             var questions = new List<PaperQuestion>(section.Questions.Count);
             foreach (var question in Shuffle(section.Questions, exam.ShuffleSeed, versionIndex, SeedPurpose.QuestionOrder, section.Id))
-                questions.Add(BuildQuestion(question, ++number, exam.ShuffleSeed, versionIndex));
+                questions.Add(BuildQuestion(question, ++number, exam.ShuffleSeed, versionIndex, wording));
 
             var marks = section.TotalMarks();
-            sections.Add(new PaperSection(Clean(section.Title), Clean(section.Instruction), marks, ArabicText.Marks(marks), questions));
+            sections.Add(new PaperSection(Clean(section.Title), Clean(section.Instruction), marks, wording.Marks(marks), questions));
         }
 
         var totalMarks = exam.TotalMarks();
         return new ExamPaper(
+            exam.Language,
             versionIndex,
-            ArabicText.VersionLetter(versionIndex),
-            ArabicText.VersionLatin(versionIndex),
+            wording.VersionLetter(versionIndex),
+            PaperWording.VersionLatin(versionIndex),
             BuildHeader(exam.Header),
             exam.Instructions.Select(Clean).Where(instruction => instruction.Length > 0).ToList(),
             sections,
             number,
-            ArabicText.Questions(number),
+            wording.Questions(number),
             totalMarks,
-            ArabicText.Marks(totalMarks),
+            wording.Marks(totalMarks),
             BuildAnswerSummary(sections));
     }
 
-    private static PaperQuestion BuildQuestion(ExamQuestion question, int number, int shuffleSeed, int versionIndex)
+    private static PaperQuestion BuildQuestion(ExamQuestion question, int number, int shuffleSeed, int versionIndex, PaperWording wording)
     {
         IEnumerable<ExamOption> orderedOptions = question.Type != QuestionType.MultipleChoice ? []
             : question.KeepOptionOrder ? question.Options
             : Shuffle(question.Options, shuffleSeed, versionIndex, SeedPurpose.OptionOrder, question.Id);
 
-        // Labels are assigned after shuffling, so every version reads أ، ب، ج… from the top.
+        // Labels are assigned after shuffling, so every version reads أ، ب، ج… (or A, B, C…) from the top.
         var options = orderedOptions
-            .Select((option, index) => new PaperOption(ArabicText.OptionLabel(index), Clean(option.Text), option.IsCorrect))
+            .Select((option, index) => new PaperOption(wording.OptionLabel(index), Clean(option.Text), option.IsCorrect))
             .ToList();
 
         var correctAnswer = question.Type switch
         {
             QuestionType.MultipleChoice => CorrectOptionText(options),
-            QuestionType.TrueFalse => ArabicText.TrueFalse(question.TrueFalseAnswer!.Value),
+            QuestionType.TrueFalse => wording.TrueFalse(question.TrueFalseAnswer!.Value),
             _ => "",
         };
 
@@ -86,7 +88,7 @@ public static class ExamPaperBuilder
             Clean(question.Text),
             Clean(question.Note),
             question.Marks,
-            ArabicText.Marks(question.Marks),
+            wording.Marks(question.Marks),
             options,
             question.Type == QuestionType.MultipleChoice ? OptionLayoutRules.Choose(options) : OptionLayout.None,
             question.Type == QuestionType.TrueFalse ? question.TrueFalseAnswer : null,
@@ -101,6 +103,7 @@ public static class ExamPaperBuilder
         return $"{correct.Label}) {correct.Text}";
     }
 
+    // A true/false answer is its word; a multiple-choice answer is the correct option's label.
     private static List<AnswerSummaryEntry> BuildAnswerSummary(IEnumerable<PaperSection> sections) =>
         sections
             .SelectMany(section => section.Questions)
@@ -108,7 +111,7 @@ public static class ExamPaperBuilder
             .Select(question => new AnswerSummaryEntry(
                 question.Number,
                 question.Type == QuestionType.TrueFalse
-                    ? ArabicText.TrueFalse(question.TrueFalseAnswer!.Value)
+                    ? question.CorrectAnswerText
                     : question.Options.Single(option => option.IsCorrect).Label))
             .ToList();
 
@@ -125,7 +128,7 @@ public static class ExamPaperBuilder
 
     private static IEnumerable<T> Shuffle<T>(List<T> items, int shuffleSeed, int versionIndex, SeedPurpose purpose, Guid id)
     {
-        // Version أ is the authored order. Other versions are seeded per section/question id,
+        // The first version is the authored order. Other versions are seeded per section/question id,
         // so editing one part of the exam doesn't reshuffle the rest.
         if (versionIndex == 0 || items.Count < 2)
             return items;
@@ -141,5 +144,5 @@ public static class ExamPaperBuilder
         return withoutReserved.Replace("\r\n", "\n").Replace('\r', '\n').Trim();
     }
 
-    private static bool IsReserved(char character) => character is >= '\uE000' and <= '\uE004';
+    private static bool IsReserved(char character) => character is >= (char)0xE000 and <= (char)0xE004;
 }

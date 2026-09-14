@@ -7,15 +7,8 @@ public sealed class ExamDefinition
 {
     public const int CurrentSchemaVersion = 1;
 
-    public static IReadOnlyList<string> DefaultInstructions { get; } =
-    [
-        "تأكد/ي من كتابة بياناتك قبل البدء.",
-        "اقرأ/ي السؤال كاملًا قبل الإجابة.",
-        "في أسئلة الاختيار من متعدد اختر/ي إجابة واحدة فقط.",
-        "اكتب/ي الحل في المساحة المخصصة لكل سؤال.",
-    ];
-
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
+    public ExamLanguage Language { get; set; } = ExamLanguage.Arabic;
     public ExamHeader Header { get; set; } = new();
     public List<string> Instructions { get; set; } = [];
     public List<ExamSection> Sections { get; set; } = [];
@@ -32,11 +25,12 @@ public sealed class ExamDefinition
     {
         // The academic year starts in the autumn semester.
         var startYear = today.Month >= 8 ? today.Year : today.Year - 1;
+        var defaults = ExamDefaults.Arabic;
 
         return new ExamDefinition
         {
-            Header = new ExamHeader { AcademicYear = $"{startYear}/{startYear + 1}" },
-            Instructions = [.. DefaultInstructions],
+            Header = defaults.Header($"{startYear}/{startYear + 1}"),
+            Instructions = [.. defaults.Instructions],
             Sections = [new ExamSection()],
             ShuffleSeed = RandomNumberGenerator.GetInt32(1, int.MaxValue),
         };

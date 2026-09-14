@@ -101,6 +101,35 @@ public class ExamJsonTests
     }
 
     [Fact]
+    public void Language_round_trips_and_reads_as_arabic_when_missing()
+    {
+        var exam = TestExams.Valid();
+        exam.Language = ExamLanguage.English;
+
+        var json = ExamJson.Serialize(exam);
+
+        Assert.Contains("\"language\": \"english\"", json);
+        Assert.Equal(ExamLanguage.English, ExamJson.Deserialize(json).Language);
+        Assert.Equal(ExamLanguage.Arabic, ExamJson.Deserialize("""{ "schemaVersion": 1 }""").Language);
+    }
+
+    [Fact]
+    public void Undefined_language_numbers_are_rejected()
+    {
+        var error = Assert.Throws<ExamJsonException>(() => ExamJson.Deserialize("""{ "schemaVersion": 1, "language": 9 }"""));
+
+        Assert.Equal("الملف ليس ملف امتحان صالحًا.", error.Message);
+    }
+
+    [Fact]
+    public void Unknown_language_names_are_rejected_as_invalid_json()
+    {
+        var error = Assert.Throws<ExamJsonException>(() => ExamJson.Deserialize("""{ "schemaVersion": 1, "language": "french" }"""));
+
+        Assert.Contains("JSON", error.Message);
+    }
+
+    [Fact]
     public void Duplicate_and_empty_ids_are_replaced()
     {
         var exam = TestExams.Valid();

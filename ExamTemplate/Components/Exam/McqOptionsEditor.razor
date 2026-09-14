@@ -7,7 +7,7 @@
         @for (var index = 0; index < Question.Options.Count; index++)
         {
             var option = Question.Options[index];
-            var label = ArabicText.OptionLabel(index);
+            var label = PaperWording.For(Language).OptionLabel(index);
             var optionIssues = Issues.Where(issue => issue.OptionId == option.Id).ToList();
             var hasError = optionIssues.Any(issue => issue.Severity == IssueSeverity.Error);
             <li @key="option.Id" class="option-row @(option.IsCorrect ? "is-correct" : null)">
@@ -56,6 +56,9 @@
     private string? focusId;
 
     [Parameter, EditorRequired] public ExamQuestion Question { get; set; } = default!;
+
+    /// <summary>The exam language, which sets the option letters.</summary>
+    [Parameter, EditorRequired] public ExamLanguage Language { get; set; }
 
     /// <summary>The visible option-related issues of this question.</summary>
     [Parameter] public IReadOnlyList<ValidationIssue> Issues { get; set; } = [];

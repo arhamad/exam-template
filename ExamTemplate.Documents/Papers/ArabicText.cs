@@ -3,12 +3,9 @@ using ExamTemplate.Documents.Model;
 
 namespace ExamTemplate.Documents.Papers;
 
-/// <summary>Arabic wording shared by the editor and both renderers.</summary>
+/// <summary>Arabic wording of the editor; the Arabic <see cref="PaperWording"/> uses its counted nouns.</summary>
 public static class ArabicText
 {
-    private static readonly string[] OptionLabels = ["أ", "ب", "ج", "د", "هـ", "و", "ز", "ح"];
-    private static readonly string[] VersionLetters = ["أ", "ب", "ج", "د"];
-
     /// <summary>Formats a number with Western digits and "." whatever the current culture.</summary>
     public static string Number(decimal value) => value.ToString("0.##", CultureInfo.InvariantCulture);
 
@@ -20,12 +17,6 @@ public static class ArabicText
 
     public static string Errors(int count) =>
         Counted(count, one: "خطأ واحد", two: "خطآن", few: "أخطاء", many: "خطأً", hundreds: "خطأ");
-
-    public static string OptionLabel(int index) => OptionLabels[CheckIndex(index, OptionLabels.Length)];
-
-    public static string VersionLetter(int index) => VersionLetters[CheckIndex(index, VersionLetters.Length)];
-
-    public static char VersionLatin(int index) => (char)('A' + CheckIndex(index, VersionLetters.Length));
 
     public static string TypeLabel(QuestionType type) => type switch
     {
@@ -58,7 +49,4 @@ public static class ArabicText
         };
         return $"{Number(value)} {noun}";
     }
-
-    private static int CheckIndex(int index, int count) =>
-        index >= 0 && index < count ? index : throw new ArgumentOutOfRangeException(nameof(index), index, null);
 }

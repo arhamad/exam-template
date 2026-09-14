@@ -11,7 +11,8 @@ public static class ExamValidator
 
     // Options whose meaning depends on their position, e.g. "جميع ما سبق".
     private static readonly string[] PositionDependentPhrases =
-        ["ما سبق", "ما ذكر", "ما ذُكر", "جميع الإجابات", "كل الإجابات", "جميع الخيارات", "كل الخيارات", "of the above"];
+        ["ما سبق", "ما ذكر", "ما ذُكر", "جميع الإجابات", "كل الإجابات", "جميع الخيارات", "كل الخيارات",
+         "of the above", "all the above", "none of these", "all of these", "both a and b"];
 
     public static ValidationReport Validate(ExamDefinition exam)
     {
@@ -171,6 +172,7 @@ public static class ExamValidator
         Action<IssueSeverity, string, string, Guid?> add)
     {
         var options = question.Options;
+        var wording = PaperWording.For(exam.Language);
         if (options.Count is < ExamLimits.MinOptions or > ExamLimits.MaxOptions)
         {
             add(IssueSeverity.Error, $"يجب أن يحتوي السؤال {number} على {ExamLimits.MinOptions} إلى {ExamLimits.MaxOptions} خيارات.",
@@ -181,7 +183,7 @@ public static class ExamValidator
         for (var index = 0; index < options.Count; index++)
         {
             var option = options[index];
-            var label = ArabicText.OptionLabel(index);
+            var label = wording.OptionLabel(index);
             if (string.IsNullOrWhiteSpace(option.Text))
                 add(IssueSeverity.Error, $"الخيار ({label}) في السؤال {number} فارغ.", "OptionText", option.Id);
             else if (option.Text.Length > ExamLimits.MaxOptionTextLength)
@@ -207,7 +209,7 @@ public static class ExamValidator
         }
     }
 
-    // Authors often type the correct option in the same position; version أ keeps the authored order.
+    // Authors often type the correct option in the same position; the first version keeps the authored order.
     private static void WarnAboutClusteredAnswers(ExamDefinition exam, List<ValidationIssue> issues)
     {
         var correctPositions = exam.Sections
@@ -229,8 +231,9 @@ public static class ExamValidator
         var share = (decimal)count / correctPositions.Count;
         if (share >= ClusterShareThreshold)
         {
+            var wording = PaperWording.For(exam.Language);
             issues.Add(new ValidationIssue(IssueSeverity.Warning,
-                $"{ArabicText.Number(Math.Round(share * 100))}% من الإجابات الصحيحة في النموذج (أ) هي الخيار ({ArabicText.OptionLabel(position)})؛ يُفضّل توزيعها على الخيارات.",
+                $"{ArabicText.Number(Math.Round(share * 100))}% من الإجابات الصحيحة في النموذج ({wording.VersionLetter(0)}) هي الخيار ({wording.OptionLabel(position)})؛ يُفضّل توزيعها على الخيارات.",
                 nameof(ExamDefinition.Sections)));
         }
     }

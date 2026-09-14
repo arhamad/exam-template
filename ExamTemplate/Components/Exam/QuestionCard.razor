@@ -77,7 +77,7 @@
     @switch (Question.Type)
     {
         case QuestionType.MultipleChoice:
-            <McqOptionsEditor Question="Question" Issues="visible.Where(IsOptionIssue).ToList()"
+            <McqOptionsEditor Question="Question" Language="Exam.Language" Issues="visible.Where(IsOptionIssue).ToList()"
                               OnEdited="Edited" OnTouched="Touch"/>
             break;
 
