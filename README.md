@@ -1,6 +1,6 @@
 # ExamTemplate — exam generator
 
-A Blazor Server app with an Arabic interface for writing university exams in Arabic or English, and printing them. Enter the
+A Blazor Server app, with an Arabic or English interface, for writing university exams in Arabic or English and printing them. Enter the
 exam details and questions (multiple choice, true/false, essay), then generate up to four shuffled versions. Each version has a
 student copy and an answer key, as Word (`.docx`) and PDF. Arabic papers read right to left; English papers use the same
 design mirrored left to right.
@@ -31,9 +31,9 @@ The app has three steps: **معلومات الامتحان** (language, header a
 
 | Path | Contents |
 |---|---|
-| `ExamTemplate/` | Blazor Web App: Interactive Server, prerender off, Bootstrap RTL. Pages in `Components/Pages`, editors in `Components/Exam`, draft autosave and browser interop in `Services/` |
-| `ExamTemplate.Documents/` | Everything that doesn't need the UI: `Model` (exam, defaults and JSON), `Validation`, `Versioning`, `Papers` (the printable model and its wording), `Design` (shared layout tokens), `Word`, `Pdf`, `Services` (`IExamDocumentService`, `AddExamDocuments()`), `Demo` |
-| `ExamTemplate.Tests/` | xUnit tests for the library, the template structure and both renderers |
+| `ExamTemplate/` | Blazor Web App: Interactive Server, prerender off, Bootstrap's right-to-left or left-to-right build. Pages in `Components/Pages`, editors in `Components/Exam`, draft autosave, browser interop and the interface language in `Services/` |
+| `ExamTemplate.Documents/` | Everything that doesn't need the UI: `Model` (exam, defaults, JSON and user messages), `Validation`, `Versioning`, `Papers` (the printable model and its wording), `Design` (shared layout tokens), `Word`, `Pdf`, `Services` (`IExamDocumentService`, `AddExamDocuments()`), `Demo` |
+| `ExamTemplate.Tests/` | xUnit tests for the library, the template structure, both renderers and the web app's interface language |
 | `tools/ExamTemplate.TemplateBuilder/` | Generates the Word templates in `ExamTemplate.Documents/Word/` |
 | `tools/ExamTemplate.Samples/` | Renders the demo exams to files for visual checks |
 | `tools/visual/` | macOS helpers: Word → PDF (AppleScript) and PDF → PNG (Swift, PDFKit) |
@@ -59,15 +59,39 @@ docx and PDF, plus the exam JSON, so the same versions can be generated again la
 
 ## Languages
 
+The interface and the exam each have their own language. An Arabic interface can edit an English exam, and the other way
+round.
+
+### Interface language
+
+The button at the end of the top bar («English» or «العربية») switches the whole interface: pages, menus, dialogs and
+validation messages. Arabic is laid out right to left and English left to right, with the same design.
+
+- **Where it's kept.** The `examTemplate.uiLanguage` cookie (`ar` or `en`) remembers the choice in this browser. Without it
+  the interface is Arabic. `App.razor` reads the cookie on every page load and sets `<html lang dir>`, Bootstrap's
+  right-to-left or left-to-right build, and the language of the circuit (passed to `Routes`).
+- **Switching.** The button saves the draft right away, writes the cookie and reloads the page. The editor opens where it
+  was, but issues shown for touched fields are hidden again until the fields are edited or the generate page is visited.
+  The static error page doesn't show the button.
+- **Wording.** Components get `UiText` as `Ui` and write every text in both languages where it is used:
+  `@Ui.Text("الأسئلة", "Questions")`. Counts and lists go through `Ui.Questions`, `Ui.Marks`, `Ui.Errors` and `Ui.Join`.
+  The library doesn't know the interface language: validation issues and the messages of `ExamUserException`
+  (`ExamJsonException`, `ExamRenderException`, `ExamValidationException`) carry a `LocalizedText` with both, and
+  `Exception.Message` holds the English text for logs.
+- **Mixed direction.** Exam text shown inside interface text (course names, section titles, version and option letters)
+  is isolated with `dir="auto"`, `<bdi>` or, inside `<option>`, `ExamContent.Isolate`, so it keeps its own direction.
+
+### Exam language
+
 Each exam is Arabic or English (`language` in the exam file). The choice is at the top of «معلومات الامتحان».
 
 - **Papers.** Arabic papers are laid out right to left. English papers use the same blocks, sizes and spacing mirrored left
   to right: question numbers and option letters at the left, marks at the right. Every fixed word on a paper (labels,
   «صفحة X من Y» / "Page X of Y", marks and question counts, true/false, version and option letters) comes from
   `PaperWording`.
-- **Editor.** The interface and its messages stay Arabic. Fields that hold exam content are typed right to left for Arabic
-  exams and left to right for English ones, and option and version letters follow the exam language, so the editor matches
-  the paper.
+- **Editor.** Whatever the interface language, fields that hold exam content are typed right to left for Arabic exams and
+  left to right for English ones. Option and version letters, placeholders and exam modes follow the exam language too, so
+  the editor matches the paper.
 - **Switching.** `ExamEditing.ChangeLanguage` replaces header values and the instruction list that still hold the old
   language's defaults (`ExamDefaults`), and maps the exam mode (نظري ↔ Theoretical, عملي ↔ Practical). Anything the
   author wrote stays.
@@ -109,7 +133,7 @@ An abridged exam file (schema version 1):
   `modelAnswer`).
 - `ExamLimits` holds the limits, such as text lengths, 2–8 options, 200 questions and 1–4 versions. The validator and
   the UI share them.
-- Files written by a newer version of the app are rejected with an Arabic message instead of being half-read.
+- Files written by a newer version of the app are rejected with a message instead of being half-read.
 
 ## Word templates
 
@@ -199,3 +223,5 @@ words take the taller Arabic line height.
 
 Drafts are stored unencrypted in the browser. On a shared computer, use «حذف المسودة» on the home page when you
 finish. If the same draft is open in two tabs, the last save wins.
+
+The only cookie the app sets is `examTemplate.uiLanguage`, which holds `ar` or `en`.
