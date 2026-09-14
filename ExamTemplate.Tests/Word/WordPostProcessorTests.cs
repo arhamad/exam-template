@@ -1,5 +1,7 @@
 using System.Security;
+using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Validation;
 using DocumentFormat.OpenXml.Wordprocessing;
 using ExamTemplate.Documents.Word;
 using ExamTemplate.Tests.TestSupport;
@@ -56,13 +58,43 @@ public class WordPostProcessorTests
         Assert.Equal(new[] { ("نص عربي فقط", true), ("Set 2026/2027 نص", false) }, runs);
     }
 
+    [Fact]
+    public void Arabic_islands_in_english_documents_get_right_to_left_runs()
+    {
+        var runs = Runs(Apply(RunXml("A circuit (دائرة تتابعية – مثل المسجل) has memory.", rtl: false), rightToLeft: false));
+
+        Assert.Equal(new[] { ("A circuit (", false), ("دائرة تتابعية – مثل المسجل", true), (") has memory.", false) }, runs);
+    }
+
+    [Fact]
+    public void Arabic_islands_keep_the_run_formatting_and_the_document_stays_valid()
+    {
+        var docx = Apply(RunXml("Translate: جامعة القدس", rtl: false, bold: true), rightToLeft: false);
+
+        using var document = WordprocessingDocument.Open(new MemoryStream(docx), false);
+        var runs = document.MainDocumentPart!.Document!.Body!.Descendants<Run>().ToList();
+
+        Assert.Equal(2, runs.Count);
+        Assert.All(runs, run => Assert.NotNull(run.RunProperties?.BoldComplexScript));
+        Assert.NotNull(runs[1].RunProperties?.RightToLeftText);
+        Assert.Empty(new OpenXmlValidator(FileFormatVersions.Microsoft365).Validate(document).Select(error => error.Description));
+    }
+
+    [Fact]
+    public void English_runs_without_arabic_are_not_split()
+    {
+        var runs = Runs(Apply(RunXml("Set 2026/2027 – x_1 = 0", rtl: false) + "<w:p><w:r><w:t>plain</w:t></w:r></w:p>", rightToLeft: false));
+
+        Assert.Equal(new[] { ("Set 2026/2027 – x_1 = 0", false), ("plain", false) }, runs);
+    }
+
     private static string RunXml(string text, bool rtl, bool bold = false) =>
         $"<w:p><w:r><w:rPr>{(bold ? "<w:b/><w:bCs/>" : "")}{(rtl ? "<w:rtl/>" : "")}</w:rPr><w:t xml:space=\"preserve\">{SecurityElement.Escape(text)}</w:t></w:r></w:p>";
 
-    private static byte[] Apply(string bodyXml)
+    private static byte[] Apply(string bodyXml, bool rightToLeft = true)
     {
         using var docx = TestDocx.Create(bodyXml);
-        WordPostProcessor.Apply(docx);
+        WordPostProcessor.Apply(docx, rightToLeft);
         return docx.ToArray();
     }
 

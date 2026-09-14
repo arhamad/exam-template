@@ -5,6 +5,7 @@ namespace ExamTemplate.Tests.Pdf;
 public class PdfTextTests
 {
     private static readonly string Lri = ((char)0x2066).ToString();
+    private static readonly string Rli = ((char)0x2067).ToString();
     private static readonly string Pdi = ((char)0x2069).ToString();
 
     [Fact]
@@ -23,4 +24,16 @@ public class PdfTextTests
 
     [Fact]
     public void Empty_text_stays_empty() => Assert.Equal("", PdfText.Isolate(""));
+
+    [Fact]
+    public void Arabic_islands_in_english_text_are_wrapped_in_right_to_left_isolates() =>
+        Assert.Equal($"Translate: {Rli}جامعة القدس{Pdi} (QOU).", PdfText.Isolate("Translate: جامعة القدس (QOU).", rightToLeft: false));
+
+    [Fact]
+    public void English_text_without_arabic_is_unchanged() =>
+        Assert.Equal("5*4*2 = 40 – 2026/2027", PdfText.Isolate("5*4*2 = 40 – 2026/2027", rightToLeft: false));
+
+    [Fact]
+    public void Arabic_only_text_in_an_english_paper_is_isolated_as_a_whole() =>
+        Assert.Equal($"{Rli}جامعة القدس المفتوحة{Pdi}", PdfText.Isolate("جامعة القدس المفتوحة", rightToLeft: false));
 }

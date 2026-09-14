@@ -8,22 +8,24 @@ namespace ExamTemplate.Documents.Word;
 internal static class WordPostProcessor
 {
     /// <summary>
-    /// Finishes a rendered document: restores the characters protected by <see cref="TemplifyText"/>, then moves
-    /// numbers, dates, Latin words and formulas out of right-to-left runs so Word lays them out left to right.
+    /// Finishes a rendered document: restores the characters protected by <see cref="TemplifyText"/>, then gives every
+    /// island of the other direction a run of its own. In an Arabic document numbers, dates, Latin words and formulas
+    /// leave the right-to-left runs; in an English document Arabic words and phrases get right-to-left runs.
     /// </summary>
-    public static void Apply(Stream docx)
+    /// <param name="rightToLeft">True for an Arabic document, false for an English one.</param>
+    public static void Apply(Stream docx, bool rightToLeft)
     {
         using var document = WordprocessingDocument.Open(docx, isEditable: true);
         var main = document.MainDocumentPart ?? throw new InvalidOperationException("The document has no main part.");
 
-        Finish(main.Document);
+        Finish(main.Document, rightToLeft);
         foreach (var header in main.HeaderParts)
-            Finish(header.Header);
+            Finish(header.Header, rightToLeft);
         foreach (var footer in main.FooterParts)
-            Finish(footer.Footer);
+            Finish(footer.Footer, rightToLeft);
     }
 
-    private static void Finish(OpenXmlElement? root)
+    private static void Finish(OpenXmlElement? root, bool rightToLeft)
     {
         if (root is null)
             return;
@@ -36,20 +38,23 @@ internal static class WordPostProcessor
         }
 
         foreach (var run in root.Descendants<Run>().ToList())
-            SplitLeftToRightIslands(run);
+            SplitIslands(run, rightToLeft);
     }
 
-    // Word lays out neutral characters (/ = + spaces) of a w:rtl run right to left, so "2026/2027" would read "2027/2026".
-    private static void SplitLeftToRightIslands(Run run)
+    // Word lays out neutral characters (/ = + spaces) in the direction of their run, so "2026/2027" in a w:rtl run would
+    // read "2027/2026", and an Arabic phrase in a left-to-right run would lose its word order around punctuation.
+    // Templify writes each line of a multi-line value as its own run, so every run here holds a single line.
+    private static void SplitIslands(Run run, bool rightToLeft)
     {
-        if (run.RunProperties?.RightToLeftText is null
-            || run.ChildElements.Where(child => child is not RunProperties).ToList() is not [Text text])
-        {
+        if (run.ChildElements.Where(child => child is not RunProperties).ToList() is not [Text text])
             return;
-        }
 
-        var segments = BidiText.Split(text.Text);
-        if (!segments.Any(segment => segment.IsLeftToRight))
+        // An Arabic document has Arabic text only in right-to-left runs.
+        if (rightToLeft && run.RunProperties?.RightToLeftText is null)
+            return;
+
+        var segments = BidiText.Split(text.Text, rightToLeft);
+        if (!segments.Any(segment => segment.IsLeftToRight == rightToLeft))
             return;
 
         foreach (var segment in segments)
@@ -59,7 +64,9 @@ internal static class WordPostProcessor
             pieceText.Text = segment.Text;
             pieceText.Space = SpaceProcessingModeValues.Preserve;
             if (segment.IsLeftToRight)
-                piece.RunProperties!.RightToLeftText!.Remove();
+                piece.RunProperties?.RightToLeftText?.Remove();
+            else
+                (piece.RunProperties ??= new RunProperties()).RightToLeftText = new RightToLeftText();
             run.InsertBeforeSelf(piece);
         }
 

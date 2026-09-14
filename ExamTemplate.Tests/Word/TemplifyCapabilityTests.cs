@@ -98,6 +98,22 @@ public class TemplifyCapabilityTests
         });
     }
 
+    // English templates have no w:rtl, so their placeholder runs carry no run properties at all.
+    [Fact]
+    public void Placeholder_runs_without_properties_stay_plain_next_to_a_bold_label()
+    {
+        const string body = "<w:p><w:r><w:rPr><w:b/><w:bCs/></w:rPr><w:t xml:space=\"preserve\">Note: </w:t></w:r><w:r><w:t>{{Text}}</w:t></w:r></w:p>";
+
+        var output = Render(body, Data(("Text", "first line\nsecond line")));
+
+        Assert.Equal("P: Note: first line⏎second line", Describe(output));
+        using var document = WordprocessingDocument.Open(new MemoryStream(output), false);
+        var textRuns = document.MainDocumentPart!.Document!.Body!.Descendants<Run>().Where(run => run.GetFirstChild<Text>() is not null).ToList();
+        Assert.Equal(3, textRuns.Count);
+        Assert.NotNull(textRuns[0].RunProperties?.Bold);
+        Assert.All(textRuns.Skip(1), run => Assert.Null(run.RunProperties?.Bold));
+    }
+
     [Fact]
     public void Markdown_mangles_raw_values_but_private_use_characters_pass_through()
     {

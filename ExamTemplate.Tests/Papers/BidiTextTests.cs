@@ -34,9 +34,21 @@ public class BidiTextTests
     [InlineData("(2.5 علامة)", "R:(|L:2.5|R: علامة)")]
     public void Brackets_join_an_island_only_when_it_closes_them(string text, string expected) => Assert.Equal(expected, Describe(text));
 
-    [Fact]
-    public void Empty_text_has_no_segments() => Assert.Empty(BidiText.Split(""));
+    [Theory]
+    [InlineData("Translate: جامعة القدس المفتوحة (QOU).", "L:Translate: |R:جامعة القدس المفتوحة|L: (QOU).")]
+    [InlineData("A sequential circuit (دائرة تتابعية – مثل المسجل) has memory.", "L:A sequential circuit (|R:دائرة تتابعية – مثل المسجل|L:) has memory.")]
+    [InlineData("See «الفصل 2» first.", "L:See «|R:الفصل 2|L:» first.")]
+    [InlineData("2 الفصل and", "L:2 |R:الفصل|L: and")]
+    [InlineData("جامعة القدس", "R:جامعة القدس")]
+    [InlineData("Version A – 2026/2027 (x_1 ≤ 2³)", "L:Version A – 2026/2027 (x_1 ≤ 2³)")]
+    public void In_english_text_arabic_phrases_become_islands(string text, string expected) =>
+        Assert.Equal(expected, Describe(text, rightToLeft: false));
 
-    private static string Describe(string text) =>
-        string.Join("|", BidiText.Split(text).Select(segment => (segment.IsLeftToRight ? "L:" : "R:") + segment.Text));
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Empty_text_has_no_segments(bool rightToLeft) => Assert.Empty(BidiText.Split("", rightToLeft));
+
+    private static string Describe(string text, bool rightToLeft = true) =>
+        string.Join("|", BidiText.Split(text, rightToLeft).Select(segment => (segment.IsLeftToRight ? "L:" : "R:") + segment.Text));
 }
