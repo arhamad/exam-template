@@ -1,0 +1,408 @@
+@page "/exam/generate"
+@inherits ExamPageBase
+@implements IAsyncDisposable
+@using System.Text
+@inject IExamDocumentService Documents
+@inject ILogger<Generate> Logger
+
+<PageTitle>التوليد والتصدير – مولّد الامتحانات</PageTitle>
+
+<header class="page-header">
+    <h1>التوليد والتصدير</h1>
+    <p class="page-lead">راجع المشكلات، واختر عدد النماذج، ثم نزّل نسخ الطلاب ومفاتيح الإجابة أو عاينها.</p>
+</header>
+
+@if (IsLoading)
+{
+    <div class="loading-state" role="status">
+        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        جارٍ تحميل المسودة…
+    </div>
+}
+else if (Exam is not { } exam)
+{
+    <NoExamNotice/>
+}
+else
+{
+    var validation = Draft.Validation;
+    var canGenerate = !validation.HasErrors;
+    var isBusy = busyJob is not null;
+
+    <section class="panel" aria-labelledby="check-title">
+        <h2 id="check-title" class="panel-title">مراجعة الامتحان</h2>
+        @if (validation.Report.Issues.Count == 0)
+        {
+            <p class="check-ok"><Icon Name="check"/> لا توجد مشكلات، والامتحان جاهز للتوليد.</p>
+        }
+        else
+        {
+            <p class="check-summary">
+                <span class="check-counts">الأخطاء: @validation.ErrorCount · التنبيهات: @validation.WarningCount</span>
+                <span>
+                    @(canGenerate
+                        ? "التنبيهات لا تمنع التوليد، لكن يُستحسن مراجعتها."
+                        : "يجب إصلاح الأخطاء قبل التوليد. اضغط على أي مشكلة للانتقال إليها.")
+                </span>
+            </p>
+            <ul class="issue-list">
+                @foreach (var issue in validation.Report.Issues.OrderBy(issue => issue.Severity))
+                {
+                    var isError = issue.Severity == IssueSeverity.Error;
+                    <li class="@(isError ? "is-error" : "is-warning")">
+                        <Icon Name="@(isError ? "error" : "warning")"/>
+                        <span class="visually-hidden">@(isError ? "خطأ: " : "تنبيه: ")</span>
+                        @if (LocalTarget(issue) is { } localId)
+                        {
+                            <a href="@($"exam/generate#{localId}")" @onclick="() => Browser.FocusElementAsync(localId, true)"
+                               @onclick:preventDefault>@issue.Message</a>
+                        }
+                        else if (LinkFor(issue) is { } href)
+                        {
+                            <a href="@href">@issue.Message</a>
+                        }
+                        else
+                        {
+                            <span>@issue.Message</span>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+
+    <section class="panel" aria-labelledby="versions-title">
+        <h2 id="versions-title" class="panel-title">النماذج</h2>
+        <p class="panel-lead">
+            يبقى النموذج (أ) بالترتيب الأصلي، وفي بقية النماذج تُخلط الأسئلة داخل كل قسم وتُخلط خيارات أسئلة الاختيار من متعدد.
+        </p>
+
+        <fieldset id="field-VersionCount" class="version-count focus-target" tabindex="-1">
+            <legend class="form-label">عدد النماذج</legend>
+            <div class="version-options">
+                @for (var count = ExamLimits.MinVersions; count <= ExamLimits.MaxVersions; count++)
+                {
+                    var value = count;
+                    <input type="radio" class="btn-check" name="version-count" id="@($"versions-{value}")" autocomplete="off"
+                           checked="@(exam.VersionCount == value)" disabled="@isBusy" @onchange="() => SetVersionCountAsync(value)"/>
+                    <label class="btn btn-outline-primary" for="@($"versions-{value}")">@VersionCountLabel(value)</label>
+                }
+            </div>
+            <FieldIssues Issues="validation.ForField(nameof(ExamDefinition.VersionCount))" Id="issues-VersionCount"/>
+        </fieldset>
+
+        <div id="field-ShuffleSeed" class="shuffle-row focus-target" tabindex="-1">
+            <div>
+                <span class="form-label d-block mb-0">رقم الخلط</span>
+                <span class="seed-value" dir="ltr">@exam.ShuffleSeed</span>
+                <div class="form-hint">يُحفظ مع الامتحان، فتُولَّد النماذج نفسها في كل مرة إلى أن تعيد الخلط.</div>
+            </div>
+            <button type="button" class="btn btn-outline-secondary" disabled="@(isBusy || exam.VersionCount < 2)"
+                    @onclick="ReshuffleAsync">
+                <Icon Name="shuffle"/> إعادة خلط
+            </button>
+        </div>
+        <FieldIssues Issues="validation.ForField(nameof(ExamDefinition.ShuffleSeed))" Id="issues-ShuffleSeed"/>
+    </section>
+
+    <section class="panel" aria-labelledby="files-title">
+        <h2 id="files-title" class="panel-title">الملفات</h2>
+
+        <div class="visually-hidden" role="status">@(isBusy ? "جارٍ إنشاء الملف…" : "")</div>
+
+        @if (errorMessage is not null)
+        {
+            <div id="generate-error" class="alert alert-danger alert-dismissible generate-error" role="alert" tabindex="-1">
+                <Icon Name="error"/>
+                <span>@errorMessage</span>
+                <button type="button" class="btn-close" aria-label="إغلاق" @onclick="() => errorMessage = null"></button>
+            </div>
+        }
+
+        @if (!canGenerate)
+        {
+            <p class="generate-blocked"><Icon Name="error"/> أصلح الأخطاء المذكورة أعلاه لتفعيل التوليد.</p>
+        }
+
+        <div class="paper-list">
+            @for (var index = 0; index < exam.VersionCount; index++)
+            {
+                var versionIndex = index;
+                var letter = ArabicText.VersionLetter(versionIndex);
+                <div class="paper-row">
+                    <div class="paper-version">
+                        <span class="version-letter" aria-hidden="true">@letter</span>
+                        <span>النموذج @letter</span>
+                    </div>
+                    @foreach (var kind in Kinds)
+                    {
+                        var paperName = $"{KindLabel(kind)} للنموذج {letter}";
+                        <div class="paper-kind" role="group" aria-label="@paperName">
+                            <span class="paper-kind-label">
+                                <Icon Name="@(kind == PaperKind.Student ? "file" : "key")"/> @KindLabel(kind)
+                            </span>
+                            <div class="paper-actions">
+                                <button type="button" class="btn btn-sm btn-primary" disabled="@(!canGenerate || isBusy)"
+                                        aria-label="@($"تنزيل {paperName} بصيغة PDF")"
+                                        @onclick="() => DownloadPaperAsync(versionIndex, kind, PaperFormat.Pdf)">
+                                    @JobIcon(JobKey(versionIndex, kind, "pdf"), "download") PDF
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" disabled="@(!canGenerate || isBusy)"
+                                        aria-label="@($"تنزيل {paperName} بصيغة Word")"
+                                        @onclick="() => DownloadPaperAsync(versionIndex, kind, PaperFormat.Word)">
+                                    @JobIcon(JobKey(versionIndex, kind, "word"), "download") Word
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!canGenerate || isBusy)"
+                                        aria-label="@($"معاينة {paperName}")"
+                                        @onclick="() => PreviewAsync(versionIndex, kind)">
+                                    @JobIcon(JobKey(versionIndex, kind, "preview"), "eye") معاينة
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="bundle-actions">
+            <button type="button" class="btn btn-primary" disabled="@(!canGenerate || isBusy)" @onclick="DownloadBundleAsync">
+                @JobIcon("bundle", "download") تنزيل الكل (ZIP)
+            </button>
+            <button type="button" class="btn btn-outline-secondary" disabled="@isBusy" @onclick="ExportJsonAsync">
+                @JobIcon("json", "download") تصدير ملف الامتحان (JSON)
+            </button>
+        </div>
+        <p class="form-hint mb-0">
+            يضم ملف ZIP نسخ الطلاب ومفاتيح الإجابة لكل النماذج بصيغتي Word وPDF مع ملف الامتحان.
+            أما ملف JSON فيحفظ الامتحان لتعديله لاحقًا أو نقله إلى جهاز آخر، ويمكن تصديره حتى مع وجود أخطاء.
+        </p>
+    </section>
+
+    @if (preview is not null)
+    {
+        <section id="preview" class="panel preview-panel focus-target" tabindex="-1" aria-labelledby="preview-title">
+            <div class="preview-header">
+                <h2 id="preview-title" class="panel-title mb-0">معاينة @preview.Title</h2>
+                <div class="button-row">
+                    <a class="btn btn-sm btn-outline-secondary" href="@preview.Url" target="_blank" rel="noopener">
+                        <Icon Name="external"/> فتح في تبويب جديد
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ClosePreviewAsync">
+                        <Icon Name="close"/> إغلاق المعاينة
+                    </button>
+                </div>
+            </div>
+            <iframe class="preview-frame" src="@preview.Url" title="@($"معاينة {preview.Title}")"></iframe>
+        </section>
+    }
+
+    <StepFooter PreviousHref="exam/questions" PreviousText="الأسئلة"/>
+}
+
+@code {
+    private const string UnexpectedErrorMessage =
+        "تعذّر إنشاء الملف بسبب خطأ غير متوقع. حاول مرة أخرى، وإن تكرر الخطأ فصدّر ملف الامتحان (JSON) وأبلغ الدعم الفني.";
+
+    private static readonly PaperKind[] Kinds = [PaperKind.Student, PaperKind.AnswerKey];
+
+    private string? busyJob;
+    private string? errorMessage;
+    private Preview? preview;
+    private bool disposed;
+
+    private enum PaperFormat
+    {
+        Pdf,
+        Word,
+    }
+
+    private sealed record Preview(string Url, string Title);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        // The editors reached through the links below show every issue, not only those of touched fields.
+        if (Exam is not null && Draft.Validation.Report.Issues.Count > 0)
+            Draft.ShowAllIssues = true;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        disposed = true;
+        await ClosePreviewAsync();
+    }
+
+    private static string KindLabel(PaperKind kind) => kind == PaperKind.Student ? "نسخة الطالب" : "مفتاح الإجابة";
+
+    private static string JobKey(int versionIndex, PaperKind kind, string action) => $"{versionIndex}-{kind}-{action}";
+
+    private static string VersionCountLabel(int count)
+    {
+        var letters = string.Join("، ", Enumerable.Range(0, count).Select(ArabicText.VersionLetter));
+        return count switch
+        {
+            1 => $"نموذج واحد ({letters})",
+            2 => $"نموذجان ({letters})",
+            _ => $"{count} نماذج ({letters})",
+        };
+    }
+
+    /// <summary>Editor location of an issue, as a deep link that focuses the offending card or field.</summary>
+    private static string? LinkFor(ValidationIssue issue) => issue switch
+    {
+        { QuestionId: { } questionId } => $"exam/questions#q-{questionId}",
+        { SectionId: { } sectionId } => $"exam/questions#s-{sectionId}",
+        { Field: nameof(ExamDefinition.Sections) } => "exam/questions",
+        _ => $"exam/details#field-{issue.Field}",
+    };
+
+    /// <summary>Issues about settings on this page focus the setting directly.</summary>
+    private static string? LocalTarget(ValidationIssue issue) =>
+        issue is { SectionId: null, Field: nameof(ExamDefinition.VersionCount) or nameof(ExamDefinition.ShuffleSeed) }
+            ? $"field-{issue.Field}"
+            : null;
+
+    private RenderFragment JobIcon(string job, string icon) =>
+        @<span class="job-icon">
+            @if (busyJob == job)
+            {
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            }
+            else
+            {
+                <Icon Name="@icon"/>
+            }
+        </span>;
+
+    private async Task SetVersionCountAsync(int count)
+    {
+        if (Exam is null || Exam.VersionCount == count)
+            return;
+
+        Exam.VersionCount = count;
+        Draft.NotifyChanged();
+        await ClosePreviewAsync();
+    }
+
+    private async Task ReshuffleAsync()
+    {
+        if (Exam is null)
+            return;
+
+        Exam.ShuffleSeed = Random.Shared.Next(1, int.MaxValue);
+        Draft.NotifyChanged();
+        await ClosePreviewAsync();
+    }
+
+    private Task DownloadPaperAsync(int versionIndex, PaperKind kind, PaperFormat format) =>
+        RunJobAsync(JobKey(versionIndex, kind, format == PaperFormat.Pdf ? "pdf" : "word"), async () =>
+        {
+            var snapshot = CreateSnapshot();
+            var file = await Task.Run(() => RenderPaper(snapshot, versionIndex, kind, format));
+            await Browser.DownloadAsync(file);
+        });
+
+    private Task PreviewAsync(int versionIndex, PaperKind kind) =>
+        RunJobAsync(JobKey(versionIndex, kind, "preview"), async () =>
+        {
+            var snapshot = CreateSnapshot();
+            var file = await Task.Run(() => RenderPaper(snapshot, versionIndex, kind, PaperFormat.Pdf));
+            var url = await Browser.CreateObjectUrlAsync(file);
+
+            await ClosePreviewAsync();
+            if (disposed)
+            {
+                await Browser.RevokeObjectUrlAsync(url);
+                return;
+            }
+
+            preview = new Preview(url, $"{KindLabel(kind)} للنموذج {ArabicText.VersionLetter(versionIndex)}");
+            FocusAfterRender("preview");
+        });
+
+    private Task DownloadBundleAsync() =>
+        RunJobAsync("bundle", async () =>
+        {
+            var snapshot = CreateSnapshot();
+            var file = await Task.Run(() => Documents.RenderBundleZip(snapshot));
+            await Browser.DownloadAsync(file);
+        });
+
+    // Allowed with validation errors: the file is how unfinished exams are kept or moved.
+    private Task ExportJsonAsync() =>
+        RunJobAsync("json", async () =>
+        {
+            var exam = Exam ?? throw new InvalidOperationException("No exam is open.");
+            var json = ExamJson.Serialize(exam);
+            await Browser.DownloadAsync(new RenderedFile(ExamFileNames.Json(exam), RenderedFile.JsonContentType, Encoding.UTF8.GetBytes(json)));
+        });
+
+    /// <summary>Runs one generation job at a time and turns failures into an Arabic message.</summary>
+    private async Task RunJobAsync(string job, Func<Task> work)
+    {
+        if (busyJob is not null || Exam is null)
+            return;
+
+        busyJob = job;
+        errorMessage = null;
+        try
+        {
+            await work();
+        }
+        catch (JSDisconnectedException)
+        {
+            // The browser left; there is nobody to tell.
+        }
+        catch (ExamValidationException exception)
+        {
+            Logger.LogInformation("Generation {Job} stopped by {ErrorCount} validation errors.", job,
+                exception.Report.Issues.Count(issue => issue.Severity == IssueSeverity.Error));
+            ShowError(exception.Message);
+        }
+        catch (Exception exception) when (exception is ExamRenderException or ExamJsonException)
+        {
+            Logger.LogError(exception, "Generation {Job} failed.", job);
+            ShowError(exception.Message);
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Generation {Job} failed unexpectedly.", job);
+            ShowError(UnexpectedErrorMessage);
+        }
+        finally
+        {
+            busyJob = null;
+        }
+    }
+
+    private void ShowError(string message)
+    {
+        errorMessage = message;
+        if (!disposed)
+            FocusAfterRender("generate-error");
+    }
+
+    // The editor keeps changing the live exam; rendering works on a private copy away from the circuit's thread.
+    private ExamDefinition CreateSnapshot() =>
+        ExamJson.Deserialize(ExamJson.Serialize(Exam ?? throw new InvalidOperationException("No exam is open.")));
+
+    private RenderedFile RenderPaper(ExamDefinition snapshot, int versionIndex, PaperKind kind, PaperFormat format)
+    {
+        var papers = Documents.BuildPapers(snapshot);
+        if (versionIndex >= papers.Count)
+            throw new InvalidOperationException($"Version {versionIndex} does not exist.");
+
+        var paper = papers[versionIndex];
+        return format == PaperFormat.Pdf ? Documents.RenderPdf(paper, kind) : Documents.RenderWord(paper, kind);
+    }
+
+    private async Task ClosePreviewAsync()
+    {
+        if (preview is not { } current)
+            return;
+
+        preview = null;
+        await Browser.RevokeObjectUrlAsync(current.Url);
+    }
+}
