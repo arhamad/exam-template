@@ -18,6 +18,9 @@ public static class ArabicText
     public static string Questions(int count) =>
         Counted(count, one: "سؤال واحد", two: "سؤالان", few: "أسئلة", many: "سؤالًا", hundreds: "سؤال");
 
+    public static string Errors(int count) =>
+        Counted(count, one: "خطأ واحد", two: "خطآن", few: "أخطاء", many: "خطأً", hundreds: "خطأ");
+
     public static string OptionLabel(int index) => OptionLabels[CheckIndex(index, OptionLabels.Length)];
 
     public static string VersionLetter(int index) => VersionLetters[CheckIndex(index, VersionLetters.Length)];

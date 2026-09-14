@@ -37,7 +37,7 @@
                         @if (errors > 0)
                         {
                             <span class="step-errors" title="أخطاء يجب إصلاحها">
-                                @errors<span class="visually-hidden"> أخطاء</span>
+                                <span aria-hidden="true">@errors</span><span class="visually-hidden">@ArabicText.Errors(errors)</span>
                             </span>
                         }
                     </NavLink>

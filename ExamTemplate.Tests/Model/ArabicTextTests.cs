@@ -34,6 +34,15 @@ public class ArabicTextTests
         Assert.Equal(expected, ArabicText.Questions(count));
 
     [Theory]
+    [InlineData(1, "خطأ واحد")]
+    [InlineData(2, "خطآن")]
+    [InlineData(7, "7 أخطاء")]
+    [InlineData(12, "12 خطأً")]
+    [InlineData(100, "100 خطأ")]
+    public void Error_counts_follow_arabic_counted_noun_rules(int count, string expected) =>
+        Assert.Equal(expected, ArabicText.Errors(count));
+
+    [Theory]
     [InlineData("12.50", "12.5")]
     [InlineData("7", "7")]
     [InlineData("0.25", "0.25")]

@@ -86,7 +86,7 @@ else
             <label class="start-option @(busy ? "is-disabled" : null)">
                 <Icon Name="upload" Class="start-icon"/>
                 <span class="start-title">استيراد ملف امتحان (JSON)</span>
-                <span class="start-text">ملف صدّرته سابقًا من هذا التطبيق، حتى 1 ميغابايت.</span>
+                <span class="start-text">ملف صدّرته سابقًا من هذا التطبيق، حتى 5 ميغابايت.</span>
                 <InputFile @key="importInputKey" class="visually-hidden" accept=".json,application/json"
                            disabled="@busy" OnChange="ImportAsync"/>
             </label>
@@ -109,7 +109,8 @@ else
 }
 
 @code {
-    private const long MaxImportBytes = 1024 * 1024;
+    // Same limit as the browser draft, so an exported exam at the largest allowed size can be imported again.
+    private const long MaxImportBytes = BrowserInterop.MaxDraftBytes;
 
     private bool loading = true;
     private bool busy;
@@ -162,7 +163,7 @@ else
         {
             if (e.File.Size > MaxImportBytes)
             {
-                ShowError("حجم الملف أكبر من 1 ميغابايت، ولا يمكن استيراده.");
+                ShowError("حجم الملف أكبر من 5 ميغابايت، ولا يمكن استيراده.");
                 return;
             }
 
