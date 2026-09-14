@@ -38,7 +38,7 @@ internal sealed class WordExamRenderer
             if (result.MissingVariables.Count > 0)
                 throw new ExamRenderException(FailureMessage, new InvalidOperationException($"Missing template values: {string.Join(", ", result.MissingVariables)}"));
 
-            WordPostProcessor.RestoreProtectedCharacters(output);
+            WordPostProcessor.Apply(output);
         }
         catch (Exception exception) when (exception is not ExamRenderException)
         {

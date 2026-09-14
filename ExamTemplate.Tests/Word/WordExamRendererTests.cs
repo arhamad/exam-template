@@ -44,7 +44,7 @@ public class WordExamRendererTests
 
         Assert.Contains("اسم الطالب:", text);
         Assert.Contains("تعليمات الامتحان", text);
-        Assert.Contains("انتهت الأسئلة", text);
+        Assert.Contains("انتهت الأسئلة – مع تمنياتنا لكم بالتوفيق", TextsOfStyle(document, "ExamEnd"));
         Assert.DoesNotContain("مفتاح الإجابة", text);
         Assert.DoesNotContain(DesignTokens.FilledBubble, text);
         Assert.DoesNotContain("الإجابة النموذجية", text);
@@ -120,6 +120,24 @@ public class WordExamRendererTests
         Assert.Contains("عدد الأسئلة: 8 أسئلة", body);
         Assert.Contains("1290 – تصميم منطق الحاسوب", footer);
         Assert.Contains("النموذج ب – 2026/2027", footer);
+    }
+
+    [Fact]
+    public void Numbers_dates_and_formulas_are_laid_out_left_to_right()
+    {
+        using var document = Open(Renderer.Render(Paper(nameof(DemoExams.EdgeCases), 0), PaperKind.Student));
+
+        var leftToRightRuns = document.MainDocumentPart!.Document!.Body!.Descendants<Run>()
+            .Where(run => run.RunProperties?.RightToLeftText is null)
+            .Select(TextOf)
+            .ToList();
+
+        Assert.Contains("2026/2027", leftToRightRuns);
+        Assert.Contains("15/01/2027", leftToRightRuns);
+        Assert.Contains("x_1 = 0", leftToRightRuns);
+        Assert.Contains("x_1 + x_2 ≤ 2³", leftToRightRuns);
+        Assert.Contains("5*4*2 = 40", leftToRightRuns);
+        Assert.Contains("Q'", leftToRightRuns);
     }
 
     private static ExamPaper Paper(string exam, int version) => ExamPaperBuilder.Build(exam switch

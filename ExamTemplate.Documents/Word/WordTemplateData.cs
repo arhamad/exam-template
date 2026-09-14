@@ -42,8 +42,7 @@ internal static class WordTemplateData
             ["Instructions"] = paper.Instructions.Select((instruction, index) => new InstructionItem(Number(index + 1), Text(instruction))).ToList(),
             ["Sections"] = paper.Sections.Select(section => Section(section, isAnswerKey)).ToList(),
             ["EndText"] = isAnswerKey ? "انتهى مفتاح الإجابة" : "انتهت الأسئلة",
-            ["EndNote"] = isAnswerKey ? "" : "مع تمنياتنا لكم بالتوفيق",
-            ["HasEndNote"] = !isAnswerKey,
+            ["EndNote"] = isAnswerKey ? "" : " – مع تمنياتنا لكم بالتوفيق",
         };
     }
 

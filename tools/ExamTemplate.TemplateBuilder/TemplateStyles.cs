@@ -59,7 +59,6 @@ internal static class TemplateStyles
         new("ExamModelAnswer", ModelAnswerSize, After: 1),
 
         new("ExamEnd", EndMarkerSize, Bold: true, Align: Align.Center, Before: SpaceBeforeEndMarker),
-        new("ExamEndNote", EndNoteSize, Align: Align.Center, Color: MutedColor, Before: 2),
 
         new("ExamFooter", FooterSize, Color: MutedColor),
         new("ExamFooterCenter", FooterSize, Align: Align.Center, Color: MutedColor),
@@ -103,6 +102,7 @@ internal static class TemplateStyles
 
         xml.Append(CharacterStyle("ExamBoldChar", "<w:b/><w:bCs/>"));
         xml.Append(CharacterStyle("ExamBubbleChar", Fonts(WordBubbleFontFamily) + Size(BubbleSize)));
+        xml.Append(CharacterStyle("ExamEndNoteChar", $"<w:b w:val=\"0\"/><w:bCs w:val=\"0\"/><w:color w:val=\"{MutedColor}\"/>" + Size(EndNoteSize)));
 
         return xml.Append("</w:styles>").ToString();
     }

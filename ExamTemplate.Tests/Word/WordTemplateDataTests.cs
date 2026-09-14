@@ -45,7 +45,7 @@ public class WordTemplateDataTests
 
         Assert.Equal(false, data["IsAnswerKey"]);
         Assert.Equal(false, data["HasAnswerSummary"]);
-        Assert.Equal(true, data["HasEndNote"]);
+        Assert.Equal(" – مع تمنياتنا لكم بالتوفيق", data["EndNote"]);
         Assert.DoesNotContain(DesignTokens.FilledBubble, Bubbles(questions));
         Assert.Equal(new[] { 1, 2, 3, 4, 5 }, questions.First(question => question.ShowAnswerLines).AnswerLines);
         Assert.DoesNotContain(questions, question => question.ShowModelAnswer);
@@ -61,7 +61,7 @@ public class WordTemplateDataTests
 
         Assert.Equal(true, data["IsAnswerKey"]);
         Assert.Equal(true, data["HasAnswerSummary"]);
-        Assert.Equal(false, data["HasEndNote"]);
+        Assert.Equal("", data["EndNote"]);
         Assert.Equal(paper.AnswerSummary.Count, Bubbles(questions).Count(bubble => bubble == DesignTokens.FilledBubble));
         Assert.DoesNotContain(questions, question => question.ShowAnswerLines);
         Assert.Equal(3, questions.Count(question => question.ShowModelAnswer));

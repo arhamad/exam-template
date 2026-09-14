@@ -69,7 +69,7 @@ public static class DesignTokens
     // Vertical rhythm
     public const float SpaceAfterInstruction = 1f;
     public const float SpaceAfterQuestionText = 2f;
-    public const float SpaceBeforeEndMarker = 12f;
+    public const float SpaceBeforeEndMarker = 8f;
     public const float ChainSpacerHeight = 2f;
     public const float QuestionGap = 8f;
     public const float BlockGap = 6f;
@@ -85,8 +85,8 @@ public static class DesignTokens
     public static IReadOnlyList<int> SummaryGrid { get; } = [680, 1417, 680, 1417, 680, 1417, 680, 1417, 680, 1420];
     public static IReadOnlyList<int> InstructionsGrid { get; } = [454, 10034];
     public static IReadOnlyList<int> SectionBarGrid { get; } = [8787, 1701];
-    public static IReadOnlyList<int> QuestionGrid { get; } = [567, 8787, 1134];
-    public static IReadOnlyList<int> TrueFalseQuestionGrid { get; } = [567, 6519, 1134, 1134, 1134];
+    public static IReadOnlyList<int> QuestionGrid { get; } = [567, 8504, 1417];
+    public static IReadOnlyList<int> TrueFalseQuestionGrid { get; } = [567, 6236, 1134, 1134, 1417];
     public static IReadOnlyList<int> OptionsOneColumnGrid { get; } = [567, 340, 454, 9127];
     public static IReadOnlyList<int> OptionsTwoColumnGrid { get; } = [567, 340, 454, 4166, 340, 454, 4167];
     public static IReadOnlyList<int> AnswerAreaGrid { get; } = [567, 9921];

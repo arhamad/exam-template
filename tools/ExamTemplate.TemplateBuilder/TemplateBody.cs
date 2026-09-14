@@ -36,10 +36,8 @@ internal static class TemplateBody
         P("ExamSpacerEnd"),
         Control("{{/foreach}}"),
         Control("{{/foreach}}"),
-        P("ExamEnd", R("{{EndText}}")),
-        Control("{{#if HasEndNote}}"),
-        P("ExamEndNote", R("{{EndNote}}")),
-        Control("{{/if}}"),
+        // One line, so the closing wish can never end up alone on an extra page.
+        P("ExamEnd", R("{{EndText}}"), R("{{EndNote}}", "ExamEndNoteChar")),
         SectionProperties(footerRelationshipId)));
 
     // Course details | logo, university and exam title | version box.
