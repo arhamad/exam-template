@@ -8,8 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Content Include="ExamTemplateDemo\.DS_Store" />
-      <Content Include="ExamTemplateDemo\ExamTemplateDemo.csproj" />
+        <ProjectReference Include="..\ExamTemplate.Documents\ExamTemplate.Documents.csproj" />
     </ItemGroup>
 
 </Project>
