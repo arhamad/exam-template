@@ -22,8 +22,10 @@
 
 #components-reconnect-modal {
     background-color: white;
-    width: 20rem;
-    margin: 20vh auto;
+    inline-size: 22rem;
+    max-inline-size: calc(100vw - 2rem);
+    margin-block: 20vh;
+    margin-inline: auto;
     padding: 2rem;
     border: 0;
     border-radius: 0.5rem;
@@ -31,13 +33,11 @@
     opacity: 0;
     transition: display 0.5s allow-discrete, overlay 0.5s allow-discrete;
     animation: components-reconnect-modal-fadeOutOpacity 0.5s both;
-    &[open]
-
-{
-    animation: components-reconnect-modal-slideUp 1.5s cubic-bezier(.05, .89, .25, 1.02) 0.3s, components-reconnect-modal-fadeInOpacity 0.5s ease-in-out 0.3s;
-    animation-fill-mode: both;
 }
 
+#components-reconnect-modal[open] {
+    animation: components-reconnect-modal-slideUp 1.5s cubic-bezier(.05, .89, .25, 1.02) 0.3s, components-reconnect-modal-fadeInOpacity 0.5s ease-in-out 0.3s;
+    animation-fill-mode: both;
 }
 
 #components-reconnect-modal::backdrop {
@@ -90,29 +90,30 @@
 
 #components-reconnect-modal button {
     border: 0;
-    background-color: #6b9ed2;
+    background-color: var(--app-primary, #1c6b45);
     color: white;
-    padding: 4px 24px;
+    padding-block: 4px;
+    padding-inline: 24px;
     border-radius: 4px;
 }
 
     #components-reconnect-modal button:hover {
-        background-color: #3b6ea2;
+        background-color: var(--app-primary-hover, #155536);
     }
 
     #components-reconnect-modal button:active {
-        background-color: #6b9ed2;
+        background-color: var(--app-primary, #1c6b45);
     }
 
 .components-rejoining-animation {
     position: relative;
-    width: 80px;
-    height: 80px;
+    inline-size: 80px;
+    block-size: 80px;
 }
 
     .components-rejoining-animation div {
         position: absolute;
-        border: 3px solid #0087ff;
+        border: 3px solid var(--app-primary, #1c6b45);
         opacity: 1;
         border-radius: 50%;
         animation: components-rejoining-animation 1.5s cubic-bezier(0, 0.2, 0.8, 1) infinite;
@@ -124,34 +125,34 @@
 
 @keyframes components-rejoining-animation {
     0% {
-        top: 40px;
-        left: 40px;
-        width: 0;
-        height: 0;
+        inset-block-start: 40px;
+        inset-inline-start: 40px;
+        inline-size: 0;
+        block-size: 0;
         opacity: 0;
     }
 
     4.9% {
-        top: 40px;
-        left: 40px;
-        width: 0;
-        height: 0;
+        inset-block-start: 40px;
+        inset-inline-start: 40px;
+        inline-size: 0;
+        block-size: 0;
         opacity: 0;
     }
 
     5% {
-        top: 40px;
-        left: 40px;
-        width: 0;
-        height: 0;
+        inset-block-start: 40px;
+        inset-inline-start: 40px;
+        inline-size: 0;
+        block-size: 0;
         opacity: 1;
     }
 
     100% {
-        top: 0px;
-        left: 0px;
-        width: 80px;
-        height: 80px;
+        inset-block-start: 0px;
+        inset-inline-start: 0px;
+        inline-size: 80px;
+        block-size: 80px;
         opacity: 0;
     }
 }

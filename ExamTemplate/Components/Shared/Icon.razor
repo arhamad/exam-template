@@ -1,0 +1,85 @@
+@* Small stroke icons drawn inline (no icon library). Decorative: pair them with visible text or an aria-label. *@
+
+<svg class="icon @Class" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
+     stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+    @switch (Name)
+    {
+        case "up":
+            <polyline points="4 10 8 6 12 10"/>
+            break;
+        case "down":
+            <polyline points="4 6 8 10 12 6"/>
+            break;
+        case "plus":
+            <path d="M8 3.5v9M3.5 8h9"/>
+            break;
+        case "copy":
+            <rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/>
+            <path d="M10.5 3V2.5h-8v8H3"/>
+            break;
+        case "trash":
+            <path d="M2.5 4.5h11M6 4.5V2.5h4v2M4 4.5l.7 9h6.6l.7-9M6.8 7v4M9.2 7v4"/>
+            break;
+        case "download":
+            <path d="M8 2.5V10M4.5 6.5 8 10l3.5-3.5M3 13.5h10"/>
+            break;
+        case "upload":
+            <path d="M8 10V2.5M4.5 6 8 2.5 11.5 6M3 13.5h10"/>
+            break;
+        case "eye":
+            <path d="M1.5 8s2.5-4.5 6.5-4.5S14.5 8 14.5 8s-2.5 4.5-6.5 4.5S1.5 8 1.5 8z"/>
+            <circle cx="8" cy="8" r="2"/>
+            break;
+        case "shuffle":
+            <path d="M2 4.5h2.5l6 7H14M2 11.5h2.5l2-2.3M9.5 6.8l1-1.3c.5-.6 1-1 1.8-1H14M12.2 2.8 14 4.5l-1.8 1.7M12.2 9.8 14 11.5l-1.8 1.7"/>
+            break;
+        case "close":
+            <path d="M4 4l8 8M12 4l-8 8"/>
+            break;
+        case "external":
+            <path d="M9.5 2.5h4v4M13.5 2.5 8 8M11.5 9.5v3a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3"/>
+            break;
+        case "home":
+            <path d="M2 7.5 8 2.5l6 5M3.5 6.5v7h3.25v-4h2.5v4h3.25v-7"/>
+            break;
+        case "details":
+            <rect x="2.5" y="2.5" width="11" height="11" rx="1.5"/>
+            <path d="M5 6h6M5 8.5h6M5 11h3.5"/>
+            break;
+        case "questions":
+            <path d="M6 4h7.5M6 8h7.5M6 12h7.5M2.75 4h.01M2.75 8h.01M2.75 12h.01"/>
+            break;
+        case "generate":
+            <path d="M4.5 6V2.5h7V6M4.5 11.5H2.5V6h11v5.5h-2M4.5 9.5h7v4h-7z"/>
+            break;
+        case "check":
+            <polyline points="3 8.5 6.5 12 13 4.5"/>
+            break;
+        case "error":
+            <circle cx="8" cy="8" r="6.25"/>
+            <path d="M8 4.8v3.7M8 11.2v.01"/>
+            break;
+        case "warning":
+            <path d="M8 2.2 14.3 13.3H1.7z"/>
+            <path d="M8 6.3v3.3M8 11.6v.01"/>
+            break;
+        case "file":
+            <path d="M9.5 1.5H3.5v13h9V4.5zM9.5 1.5v3h3"/>
+            break;
+        case "key":
+            <circle cx="5" cy="10.5" r="3"/>
+            <path d="M7.2 8.3 13.5 2M11.3 4.2l1.6 1.6M9.6 5.9l1.2 1.2"/>
+            break;
+        case "sample":
+            <path d="M6 12.5h4M6.5 14.5h3M8 1.5a4.5 4.5 0 0 0-2.5 8.2V11h5V9.7A4.5 4.5 0 0 0 8 1.5z"/>
+            break;
+        case "move":
+            <path d="M2.5 8h11M5.5 5 2.5 8l3 3M10.5 5l3 3-3 3"/>
+            break;
+    }
+</svg>
+
+@code {
+    [Parameter, EditorRequired] public string Name { get; set; } = "";
+    [Parameter] public string? Class { get; set; }
+}

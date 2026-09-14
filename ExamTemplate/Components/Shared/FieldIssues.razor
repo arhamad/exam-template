@@ -1,0 +1,26 @@
+@* Validation messages under a field. The caller decides which issues are visible (touched fields or "show all"). *@
+
+@if (visibleIssues.Count > 0)
+{
+    <ul class="field-issues" id="@Id">
+        @foreach (var issue in visibleIssues)
+        {
+            var isError = issue.Severity == IssueSeverity.Error;
+            <li class="@(isError ? "is-error" : "is-warning")">
+                <Icon Name="@(isError ? "error" : "warning")"/>
+                <span><span class="visually-hidden">@(isError ? "خطأ: " : "تنبيه: ")</span>@issue.Message</span>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private List<ValidationIssue> visibleIssues = [];
+
+    [Parameter] public IEnumerable<ValidationIssue>? Issues { get; set; }
+
+    /// <summary>Referenced by the field's <c>aria-describedby</c>.</summary>
+    [Parameter] public string? Id { get; set; }
+
+    protected override void OnParametersSet() => visibleIssues = Issues?.ToList() ?? [];
+}

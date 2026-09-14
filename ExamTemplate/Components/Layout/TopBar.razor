@@ -1,0 +1,24 @@
+@inherits DraftSubscriber
+
+<header class="top-bar">
+    @if (Draft.Exam is { } exam)
+    {
+        <div class="exam-identity">
+            <span class="exam-course">
+                @(string.IsNullOrWhiteSpace(exam.Header.CourseName) ? "امتحان بلا اسم مقرر" : exam.Header.CourseName)
+            </span>
+            @if (!string.IsNullOrWhiteSpace(exam.Header.CourseCode))
+            {
+                <span class="exam-code" dir="ltr">@exam.Header.CourseCode</span>
+            }
+        </div>
+        <div class="top-bar-status">
+            <ExamTotalsBadge/>
+            <SaveStatus/>
+        </div>
+    }
+    else
+    {
+        <span class="exam-identity text-body-secondary">لا يوجد امتحان مفتوح</span>
+    }
+</header>

@@ -1,10 +1,18 @@
 using ExamTemplate.Components;
+using ExamTemplate.Documents.Services;
+using ExamTemplate.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents(options => options.DetailedErrors = builder.Environment.IsDevelopment());
+
+builder.Services.AddExamDocuments();
+
+// One per circuit: the exam being edited and the browser it is saved in.
+builder.Services.AddScoped<BrowserInterop>();
+builder.Services.AddScoped<ExamDraftState>();
 
 var app = builder.Build();
 

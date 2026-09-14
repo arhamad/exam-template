@@ -1,7 +1,248 @@
-﻿@page "/"
+@page "/"
+@inject ExamDraftState Draft
+@inject BrowserInterop Browser
+@inject NavigationManager Navigation
+@inject ILogger<Home> Logger
 
-<PageTitle>Home</PageTitle>
+<PageTitle>مولّد الامتحانات</PageTitle>
 
-<h1>Hello, world!</h1>
+<header class="page-header home-hero">
+    <img src="images/qou-logo.png" alt="" width="72" height="70" class="home-logo"/>
+    <div>
+        <h1>مولّد الامتحانات</h1>
+        <p class="page-lead">
+            أنشئ امتحانًا بأسئلة اختيار من متعدد وصح أو خطأ وأسئلة مقالية، ثم ولّد منه حتى أربعة نماذج مخلوطة
+            مع مفاتيح الإجابة بصيغتي Word وPDF.
+        </p>
+    </div>
+</header>
 
-Welcome to your new app.
+@if (loading)
+{
+    <div class="loading-state" role="status">
+        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        جارٍ البحث عن مسودة محفوظة…
+    </div>
+}
+else
+{
+    @if (message is not null)
+    {
+        <div class="alert @(messageIsError ? "alert-danger" : "alert-success") alert-dismissible" role="alert">
+            @message
+            <button type="button" class="btn-close" aria-label="إغلاق" @onclick="() => message = null"></button>
+        </div>
+    }
+
+    @if (Draft.RestoreError is { } restoreError)
+    {
+        <div class="alert alert-warning" role="alert">@restoreError</div>
+    }
+
+    @if (Draft.Exam is { } exam)
+    {
+        var questionCount = exam.QuestionCount();
+        <section class="panel draft-card" aria-labelledby="draft-title">
+            <h2 id="draft-title" class="panel-title">متابعة المسودة الحالية</h2>
+            <dl class="draft-facts">
+                <div>
+                    <dt>المقرر</dt>
+                    <dd>
+                        @(string.IsNullOrWhiteSpace(exam.Header.CourseName) ? "بلا اسم" : exam.Header.CourseName)
+                        @if (!string.IsNullOrWhiteSpace(exam.Header.CourseCode))
+                        {
+                            <span class="text-body-secondary" dir="ltr">(@exam.Header.CourseCode)</span>
+                        }
+                    </dd>
+                </div>
+                <div>
+                    <dt>المحتوى</dt>
+                    <dd>@(questionCount == 0 ? "لا توجد أسئلة" : ArabicText.Questions(questionCount)) · @ArabicText.Marks(exam.TotalMarks())</dd>
+                </div>
+                <div>
+                    <dt>آخر حفظ</dt>
+                    <dd>@SavedAtText</dd>
+                </div>
+            </dl>
+            <div class="button-row">
+                <a class="btn btn-primary" href="exam/details">متابعة التحرير</a>
+                <a class="btn btn-outline-primary" href="exam/generate">التوليد والتصدير</a>
+                <button type="button" class="btn btn-outline-danger ms-sm-auto" disabled="@busy" @onclick="DeleteDraftAsync">
+                    <Icon Name="trash"/> حذف المسودة
+                </button>
+            </div>
+        </section>
+    }
+
+    <section class="panel" aria-labelledby="start-title">
+        <h2 id="start-title" class="panel-title">@(Draft.Exam is null ? "ابدأ" : "أو ابدأ امتحانًا آخر")</h2>
+        <div class="start-options">
+            <button type="button" class="start-option" disabled="@busy" @onclick="CreateNewAsync">
+                <Icon Name="plus" Class="start-icon"/>
+                <span class="start-title">امتحان جديد</span>
+                <span class="start-text">قسم فارغ مع التعليمات الافتراضية.</span>
+            </button>
+
+            <label class="start-option @(busy ? "is-disabled" : null)">
+                <Icon Name="upload" Class="start-icon"/>
+                <span class="start-title">استيراد ملف امتحان (JSON)</span>
+                <span class="start-text">ملف صدّرته سابقًا من هذا التطبيق، حتى 1 ميغابايت.</span>
+                <InputFile @key="importInputKey" class="visually-hidden" accept=".json,application/json"
+                           disabled="@busy" OnChange="ImportAsync"/>
+            </label>
+
+            <button type="button" class="start-option" disabled="@busy" @onclick="LoadSampleAsync">
+                <Icon Name="sample" Class="start-icon"/>
+                <span class="start-title">تحميل نموذج تجريبي</span>
+                <span class="start-text">امتحان «تصميم منطق الحاسوب»: ثلاثة أقسام وثمانية أسئلة ونموذجان.</span>
+            </button>
+        </div>
+    </section>
+
+    <p class="storage-note">
+        <Icon Name="warning"/>
+        <span>
+            تُحفظ المسودة تلقائيًا في هذا المتصفح فقط ولا تُخزَّن على الخادم. للاحتفاظ بنسخة أو للعمل من جهاز آخر استخدم
+            «تصدير ملف الامتحان (JSON)» في صفحة التوليد والتصدير، واحذف المسودة بعد الانتهاء إن كان الجهاز مشتركًا.
+        </span>
+    </p>
+}
+
+@code {
+    private const long MaxImportBytes = 1024 * 1024;
+
+    private bool loading = true;
+    private bool busy;
+    private int importInputKey;
+    private DraftInfo? storedInfo;
+    private string? message;
+    private bool messageIsError;
+
+    private string SavedAtText => Draft.SaveStatus switch
+    {
+        DraftSaveStatus.Pending or DraftSaveStatus.Saving => "جارٍ الحفظ…",
+        DraftSaveStatus.Failed => "تعذّر الحفظ في المتصفح",
+        _ when !string.IsNullOrEmpty(storedInfo?.SavedAtText) => storedInfo.SavedAtText,
+        _ => "غير معروف",
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Draft.EnsureLoadedAsync();
+        if (Draft.Exam is not null)
+            storedInfo = await TryGetDraftInfoAsync();
+        loading = false;
+    }
+
+    private async Task CreateNewAsync()
+    {
+        if (!await ConfirmReplaceAsync())
+            return;
+
+        Draft.Replace(ExamDefinition.CreateNew());
+        Navigation.NavigateTo("exam/details");
+    }
+
+    private async Task LoadSampleAsync()
+    {
+        if (!await ConfirmReplaceAsync())
+            return;
+
+        Draft.Replace(DemoExams.ComputerLogicDesign());
+        Navigation.NavigateTo("exam/questions");
+    }
+
+    private async Task ImportAsync(InputFileChangeEventArgs e)
+    {
+        message = null;
+        ExamDefinition exam;
+
+        busy = true;
+        try
+        {
+            if (e.File.Size > MaxImportBytes)
+            {
+                ShowError("حجم الملف أكبر من 1 ميغابايت، ولا يمكن استيراده.");
+                return;
+            }
+
+            await using var stream = e.File.OpenReadStream(MaxImportBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            buffer.Position = 0;
+            exam = ExamJson.Deserialize(buffer);
+        }
+        catch (ExamJsonException exception)
+        {
+            ShowError(exception.Message);
+            return;
+        }
+        catch (Exception exception) when (exception is not JSDisconnectedException)
+        {
+            Logger.LogWarning(exception, "Importing the exam file {FileName} failed.", e.File.Name);
+            ShowError("تعذّرت قراءة الملف. تأكد من أنه ملف امتحان صدّرته من هذا التطبيق ثم حاول مرة أخرى.");
+            return;
+        }
+        finally
+        {
+            busy = false;
+            // A new input element, so choosing the same file again raises a change event.
+            importInputKey++;
+        }
+
+        if (!await ConfirmReplaceAsync())
+            return;
+
+        Draft.Replace(exam);
+        Navigation.NavigateTo("exam/questions");
+    }
+
+    private async Task DeleteDraftAsync()
+    {
+        var confirmed = await Browser.ConfirmAsync(
+            "حذف المسودة نهائيًا من هذا المتصفح؟ لا يمكن التراجع عن ذلك؛ صدّر ملف JSON أولًا إن أردت الاحتفاظ بنسخة.");
+        if (!confirmed)
+            return;
+
+        busy = true;
+        var deleted = await Draft.DiscardAsync();
+        busy = false;
+        storedInfo = null;
+
+        if (deleted)
+            ShowSuccess("حُذفت المسودة من هذا المتصفح.");
+        else
+            ShowError("أُغلق الامتحان، لكن تعذّر حذف المسودة من تخزين المتصفح.");
+    }
+
+    private async Task<bool> ConfirmReplaceAsync()
+    {
+        if (Draft.Exam is not null)
+        {
+            return await Browser.ConfirmAsync(
+                "سيحلّ الامتحان الجديد محلّ المسودة الحالية، ولن يمكن استعادتها إلا من ملف JSON مُصدَّر. هل تريد المتابعة؟");
+        }
+
+        if (Draft.RestoreError is not null)
+            return await Browser.ConfirmAsync("ستُستبدل المسودة المحفوظة التي تعذّرت قراءتها. هل تريد المتابعة؟");
+
+        return true;
+    }
+
+    private async Task<DraftInfo?> TryGetDraftInfoAsync()
+    {
+        try
+        {
+            return await Browser.GetDraftInfoAsync();
+        }
+        catch (JSException exception)
+        {
+            Logger.LogWarning(exception, "Reading the draft summary from the browser failed.");
+            return null;
+        }
+    }
+
+    private void ShowError(string text) => (message, messageIsError) = (text, true);
+
+    private void ShowSuccess(string text) => (message, messageIsError) = (text, false);
+}

@@ -1,0 +1,30 @@
+@inherits DraftSubscriber
+
+@* Asks before the tab is closed or reloaded while the latest edits aren't in localStorage yet. *@
+<NavigationLock ConfirmExternalNavigation="@Draft.HasUnsavedChanges"/>
+
+@switch (Draft.SaveStatus)
+{
+    case DraftSaveStatus.Pending:
+    case DraftSaveStatus.Saving:
+        <span class="save-status is-saving">
+            <span class="spinner-grow spinner-grow-sm" aria-hidden="true"></span>
+            جارٍ الحفظ…
+        </span>
+        break;
+
+    case DraftSaveStatus.Saved:
+        <span class="save-status is-saved">
+            <Icon Name="check"/>
+            تم الحفظ تلقائيًا
+        </span>
+        break;
+
+    case DraftSaveStatus.Failed:
+        <span class="save-status is-failed" role="alert">
+            <Icon Name="error"/>
+            تعذّر الحفظ في المتصفح
+            <button type="button" class="btn btn-link btn-sm p-0 align-baseline" @onclick="Draft.SaveNowAsync">إعادة المحاولة</button>
+        </span>
+        break;
+}

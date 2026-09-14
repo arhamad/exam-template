@@ -1,0 +1,13 @@
+@inject ExamDraftState Draft
+
+<div class="empty-state">
+    <h2 class="h5">لا يوجد امتحان مفتوح</h2>
+    @if (Draft.RestoreError is { } error)
+    {
+        <div class="alert alert-warning" role="alert">@error</div>
+    }
+    <p class="text-body-secondary">أنشئ امتحانًا جديدًا، أو استورد ملف امتحان، أو افتح النموذج التجريبي من الصفحة الرئيسية.</p>
+    <a class="btn btn-primary" href="">
+        <Icon Name="home"/> الذهاب إلى الصفحة الرئيسية
+    </a>
+</div>

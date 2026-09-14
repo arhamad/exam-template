@@ -1,29 +1,77 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+@inherits DraftSubscriber
+
+<div class="top-row navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">ExamTemplate</a>
+        <a class="navbar-brand" href="">
+            <img src="images/qou-logo.png" alt="" width="40" height="39" class="brand-logo"/>
+            <span>مولّد الامتحانات</span>
+        </a>
     </div>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler"/>
+<input type="checkbox" title="قائمة التنقل" aria-label="قائمة التنقل" class="navbar-toggler"/>
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
+    <nav class="nav flex-column" aria-label="التنقل الرئيسي">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                <Icon Name="home"/> الرئيسية
             </NavLink>
         </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
+        <div class="nav-section-label px-3" aria-hidden="true">خطوات إعداد الامتحان</div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
+        @{
+            var hasExam = Draft.Exam is not null;
+            var validation = Draft.Validation;
+        }
+        @foreach (var step in Steps)
+        {
+            var errors = hasExam ? validation.Report.Issues.Count(issue => issue.Severity == IssueSeverity.Error && step.Owns(issue)) : 0;
+            <div class="nav-item px-3">
+                @if (hasExam)
+                {
+                    <NavLink class="nav-link" href="@step.Href">
+                        <span class="step-number" aria-hidden="true">@step.Number</span>
+                        <span>@step.Title</span>
+                        @if (errors > 0)
+                        {
+                            <span class="step-errors" title="أخطاء يجب إصلاحها">
+                                @errors<span class="visually-hidden"> أخطاء</span>
+                            </span>
+                        }
+                    </NavLink>
+                }
+                else
+                {
+                    <span class="nav-link disabled" aria-disabled="true" title="افتح امتحانًا أولًا">
+                        <span class="step-number" aria-hidden="true">@step.Number</span>
+                        <span>@step.Title</span>
+                    </span>
+                }
+            </div>
+        }
     </nav>
 </div>
+
+@code {
+    private static readonly HashSet<string> DetailsFields =
+    [
+        nameof(ExamHeader.UniversityName), nameof(ExamHeader.ExamTitle), nameof(ExamHeader.Semester),
+        nameof(ExamHeader.AcademicYear), nameof(ExamHeader.CourseName), nameof(ExamHeader.CourseCode),
+        nameof(ExamHeader.Duration), nameof(ExamHeader.ExamMode), nameof(ExamDefinition.Instructions),
+    ];
+
+    private static readonly Step[] Steps =
+    [
+        new(1, "exam/details", "معلومات الامتحان",
+            issue => issue.SectionId is null && DetailsFields.Contains(issue.Field)),
+        new(2, "exam/questions", "الأسئلة",
+            issue => issue.SectionId is not null || issue.Field == nameof(ExamDefinition.Sections)),
+        new(3, "exam/generate", "التوليد والتصدير",
+            issue => issue.SectionId is null
+                && issue.Field is nameof(ExamDefinition.VersionCount) or nameof(ExamDefinition.ShuffleSeed)),
+    ];
+
+    private sealed record Step(int Number, string Href, string Title, Func<ValidationIssue, bool> Owns);
+}

@@ -1,23 +1,41 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 
+@* With dir="rtl" the sidebar (first flex item) sits on the right. This layout never subscribes to draft
+   changes: the live parts (navigation, top bar) update on their own. *@
 <div class="page">
     <div class="sidebar">
         <NavMenu/>
     </div>
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+        <TopBar/>
 
-        <article class="content px-4">
-            @Body
+        <article class="content">
+            <ErrorBoundary @ref="errorBoundary">
+                <ChildContent>
+                    @Body
+                </ChildContent>
+                <ErrorContent>
+                    <div class="alert alert-danger" role="alert">
+                        <h1 class="h4">حدث خطأ غير متوقع في هذه الصفحة</h1>
+                        <p>تُحفظ مسودتك تلقائيًا في هذا المتصفح. انتقل إلى صفحة أخرى أو أعد تحميل الصفحة للمتابعة.</p>
+                        <a class="btn btn-outline-danger btn-sm" href="">الصفحة الرئيسية</a>
+                    </div>
+                </ErrorContent>
+            </ErrorBoundary>
         </article>
     </main>
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+    حدث خطأ غير متوقع.
+    <a href="." class="reload">إعادة تحميل الصفحة</a>
+    <span class="dismiss" role="button" aria-label="إغلاق">×</span>
 </div>
+
+@code {
+    private ErrorBoundary? errorBoundary;
+
+    // Navigating to another page clears an error shown by the previous one.
+    protected override void OnParametersSet() => errorBoundary?.Recover();
+}

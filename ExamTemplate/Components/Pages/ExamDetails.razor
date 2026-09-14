@@ -1,0 +1,148 @@
+@page "/exam/details"
+@inherits ExamPageBase
+
+<PageTitle>معلومات الامتحان – مولّد الامتحانات</PageTitle>
+
+<header class="page-header">
+    <h1>معلومات الامتحان</h1>
+    <p class="page-lead">البيانات التي تُطبع في رأس ورقة الامتحان وتذييلها، وتعليمات الامتحان.</p>
+</header>
+
+@if (IsLoading)
+{
+    <div class="loading-state" role="status">
+        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        جارٍ تحميل المسودة…
+    </div>
+}
+else if (Exam is not { } exam)
+{
+    <NoExamNotice/>
+}
+else
+{
+    var header = exam.Header;
+
+    <section class="panel" aria-labelledby="header-title">
+        <h2 id="header-title" class="panel-title">رأس الورقة</h2>
+        <p class="panel-lead">الحقول المعلَّمة بـ <span class="required-mark">*</span> مطلوبة.</p>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="field-UniversityName">اسم الجامعة<span class="required-mark" aria-hidden="true">*</span></label>
+                <input id="field-UniversityName" class="form-control" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
+                       aria-invalid="@InvalidFor(nameof(ExamHeader.UniversityName))" aria-describedby="@DescribedBy(nameof(ExamHeader.UniversityName))"
+                       @bind="header.UniversityName" @bind:after="() => Changed(nameof(ExamHeader.UniversityName))"
+                       @onblur="() => Touch(nameof(ExamHeader.UniversityName))"/>
+                <FieldIssues Issues="IssuesFor(nameof(ExamHeader.UniversityName))" Id="issues-UniversityName"/>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label" for="field-ExamTitle">عنوان الامتحان<span class="required-mark" aria-hidden="true">*</span></label>
+                <input id="field-ExamTitle" class="form-control" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
+                       placeholder="الامتحان النهائي"
+                       aria-invalid="@InvalidFor(nameof(ExamHeader.ExamTitle))" aria-describedby="@DescribedBy(nameof(ExamHeader.ExamTitle))"
+                       @bind="header.ExamTitle" @bind:after="() => Changed(nameof(ExamHeader.ExamTitle))"
+                       @onblur="() => Touch(nameof(ExamHeader.ExamTitle))"/>
+                <FieldIssues Issues="IssuesFor(nameof(ExamHeader.ExamTitle))" Id="issues-ExamTitle"/>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label" for="field-CourseName">اسم المقرر<span class="required-mark" aria-hidden="true">*</span></label>
+                <input id="field-CourseName" class="form-control" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
+                       placeholder="مثال: تصميم منطق الحاسوب"
+                       aria-invalid="@InvalidFor(nameof(ExamHeader.CourseName))" aria-describedby="@DescribedBy(nameof(ExamHeader.CourseName))"
+                       @bind="header.CourseName" @bind:after="() => Changed(nameof(ExamHeader.CourseName))"
+                       @onblur="() => Touch(nameof(ExamHeader.CourseName))"/>
+                <FieldIssues Issues="IssuesFor(nameof(ExamHeader.CourseName))" Id="issues-CourseName"/>
+            </div>
+
+            <div class="col-sm-6 col-md-3">
+                <label class="form-label" for="field-CourseCode">رقم المقرر<span class="required-mark" aria-hidden="true">*</span></label>
+                <input id="field-CourseCode" class="form-control" dir="ltr" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
+                       placeholder="1290"
+                       aria-invalid="@InvalidFor(nameof(ExamHeader.CourseCode))" aria-describedby="@DescribedBy(nameof(ExamHeader.CourseCode))"
+                       @bind="header.CourseCode" @bind:after="() => Changed(nameof(ExamHeader.CourseCode))"
+                       @onblur="() => Touch(nameof(ExamHeader.CourseCode))"/>
+                <FieldIssues Issues="IssuesFor(nameof(ExamHeader.CourseCode))" Id="issues-CourseCode"/>
+            </div>
+
+            <div class="col-sm-6 col-md-3">
+                <label class="form-label" for="field-AcademicYear">العام الأكاديمي<span class="required-mark" aria-hidden="true">*</span></label>
+                <input id="field-AcademicYear" class="form-control" dir="ltr" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
+                       placeholder="2026/2027"
+                       aria-invalid="@InvalidFor(nameof(ExamHeader.AcademicYear))" aria-describedby="@DescribedBy(nameof(ExamHeader.AcademicYear))"
+                       @bind="header.AcademicYear" @bind:after="() => Changed(nameof(ExamHeader.AcademicYear))"
+                       @onblur="() => Touch(nameof(ExamHeader.AcademicYear))"/>
+                <FieldIssues Issues="IssuesFor(nameof(ExamHeader.AcademicYear))" Id="issues-AcademicYear"/>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label" for="field-Semester">الفصل الدراسي</label>
+                <input id="field-Semester" class="form-control" maxlength="@ExamLimits.MaxHeaderFieldLength"
+                       placeholder="الفصل الأول"
+                       aria-invalid="@InvalidFor(nameof(ExamHeader.Semester))" aria-describedby="@DescribedBy(nameof(ExamHeader.Semester))"
+                       @bind="header.Semester" @bind:after="() => Changed(nameof(ExamHeader.Semester))"
+                       @onblur="() => Touch(nameof(ExamHeader.Semester))"/>
+                <FieldIssues Issues="IssuesFor(nameof(ExamHeader.Semester))" Id="issues-Semester"/>
+            </div>
+
+            <div class="col-sm-6 col-md-3">
+                <label class="form-label" for="field-Duration">مدة الامتحان<span class="required-mark" aria-hidden="true">*</span></label>
+                <input id="field-Duration" class="form-control" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
+                       placeholder="ساعة ونصف"
+                       aria-invalid="@InvalidFor(nameof(ExamHeader.Duration))" aria-describedby="@DescribedBy(nameof(ExamHeader.Duration))"
+                       @bind="header.Duration" @bind:after="() => Changed(nameof(ExamHeader.Duration))"
+                       @onblur="() => Touch(nameof(ExamHeader.Duration))"/>
+                <FieldIssues Issues="IssuesFor(nameof(ExamHeader.Duration))" Id="issues-Duration"/>
+            </div>
+
+            <div class="col-sm-6 col-md-3">
+                <label class="form-label" for="field-ExamMode">نوع الامتحان</label>
+                <select id="field-ExamMode" class="form-select"
+                        aria-invalid="@InvalidFor(nameof(ExamHeader.ExamMode))" aria-describedby="@DescribedBy(nameof(ExamHeader.ExamMode))"
+                        @bind="header.ExamMode" @bind:after="() => Changed(nameof(ExamHeader.ExamMode))">
+                    <option value="">غير محدد</option>
+                    <option value="نظري">نظري</option>
+                    <option value="عملي">عملي</option>
+                    @if (header.ExamMode is { Length: > 0 } mode && mode is not ("نظري" or "عملي"))
+                    {
+                        <option value="@mode">@mode</option>
+                    }
+                </select>
+                <FieldIssues Issues="IssuesFor(nameof(ExamHeader.ExamMode))" Id="issues-ExamMode"/>
+            </div>
+
+            <div class="col-sm-6 col-md-3">
+                <label class="form-label" for="field-ExamDate">تاريخ الامتحان</label>
+                <input id="field-ExamDate" type="date" class="form-control"
+                       @bind="header.ExamDate" @bind:after="() => Changed(nameof(ExamHeader.ExamDate))"/>
+                <div class="form-text">اختياري؛ يُطبع في رأس الورقة.</div>
+            </div>
+        </div>
+    </section>
+
+    <InstructionsEditor Exam="exam"/>
+
+    <StepFooter PreviousHref="" PreviousText="الرئيسية" NextHref="exam/questions" NextText="الأسئلة"/>
+}
+
+@code {
+    private readonly HashSet<string> touched = [];
+
+    private IEnumerable<ValidationIssue> IssuesFor(string field) =>
+        Draft.ShowAllIssues || touched.Contains(field) ? Draft.Validation.ForField(field) : [];
+
+    private string? InvalidFor(string field) =>
+        IssuesFor(field).Any(issue => issue.Severity == IssueSeverity.Error) ? "true" : null;
+
+    private string? DescribedBy(string field) => IssuesFor(field).Any() ? $"issues-{field}" : null;
+
+    private void Changed(string field)
+    {
+        touched.Add(field);
+        Draft.NotifyChanged();
+    }
+
+    private void Touch(string field) => touched.Add(field);
+}

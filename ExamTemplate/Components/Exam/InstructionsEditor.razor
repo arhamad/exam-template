@@ -1,0 +1,136 @@
+@inject ExamDraftState Draft
+@inject BrowserInterop Browser
+
+<section id="field-Instructions" class="panel focus-target" tabindex="-1" aria-labelledby="instructions-title">
+    <div class="panel-heading">
+        <h2 id="instructions-title" class="panel-title">تعليمات الامتحان</h2>
+        <span class="panel-count">@Exam.Instructions.Count من @ExamLimits.MaxInstructions</span>
+    </div>
+    <p class="panel-lead">تُطبع مرقّمة في أعلى ورقة الامتحان، ولا تُطبع التعليمات الفارغة.</p>
+
+    <FieldIssues Issues="VisibleIssues" Id="issues-Instructions"/>
+
+    @if (Exam.Instructions.Count == 0)
+    {
+        <p class="text-body-secondary">لا توجد تعليمات.</p>
+    }
+    else
+    {
+        <ol class="instruction-list">
+            @for (var index = 0; index < Exam.Instructions.Count; index++)
+            {
+                var i = index;
+                var rowId = rowIds[i];
+                var number = i + 1;
+                var isLast = i == Exam.Instructions.Count - 1;
+                <li @key="rowId" class="instruction-row">
+                    <span class="instruction-number" aria-hidden="true">@number</span>
+                    <textarea id="@TextId(rowId)" class="form-control" rows="1" maxlength="@ExamLimits.MaxInstructionLength"
+                              aria-label="@($"نص التعليمة {number}")"
+                              @bind="Exam.Instructions[i]" @bind:after="OnEdited"></textarea>
+                    <div class="row-actions">
+                        <button id="@ButtonId(rowId, "up")" type="button" class="btn btn-sm btn-outline-secondary icon-button"
+                                title="نقل للأعلى" aria-label="@($"نقل التعليمة {number} للأعلى")"
+                                disabled="@(i == 0)" @onclick="() => Move(i, -1)">
+                            <Icon Name="up"/>
+                        </button>
+                        <button id="@ButtonId(rowId, "down")" type="button" class="btn btn-sm btn-outline-secondary icon-button"
+                                title="نقل للأسفل" aria-label="@($"نقل التعليمة {number} للأسفل")"
+                                disabled="@isLast" @onclick="() => Move(i, 1)">
+                            <Icon Name="down"/>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger icon-button"
+                                title="حذف" aria-label="@($"حذف التعليمة {number}")"
+                                @onclick="() => Remove(i)">
+                            <Icon Name="trash"/>
+                        </button>
+                    </div>
+                </li>
+            }
+        </ol>
+    }
+
+    <button id="instruction-add" type="button" class="btn btn-outline-primary btn-sm"
+            disabled="@(Exam.Instructions.Count >= ExamLimits.MaxInstructions)" @onclick="Add">
+        <Icon Name="plus"/> إضافة تعليمة
+    </button>
+</section>
+
+@code {
+    // Instructions are plain strings (not unique), so rows get their own stable keys for @key and element ids.
+    private readonly List<int> rowIds = [];
+    private List<string>? trackedInstructions;
+    private int nextRowId;
+    private bool touched;
+    private string? focusId;
+
+    [Parameter, EditorRequired] public ExamDefinition Exam { get; set; } = default!;
+
+    private IEnumerable<ValidationIssue> VisibleIssues =>
+        touched || Draft.ShowAllIssues ? Draft.Validation.ForField(nameof(ExamDefinition.Instructions)) : [];
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(trackedInstructions, Exam.Instructions) || rowIds.Count != Exam.Instructions.Count)
+        {
+            trackedInstructions = Exam.Instructions;
+            rowIds.Clear();
+            rowIds.AddRange(Exam.Instructions.Select(_ => nextRowId++));
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (focusId is { } id)
+        {
+            focusId = null;
+            await Browser.FocusElementAsync(id);
+        }
+    }
+
+    private void OnEdited()
+    {
+        touched = true;
+        Draft.NotifyChanged();
+    }
+
+    private void Move(int index, int delta)
+    {
+        var target = index + delta;
+        if (target < 0 || target >= Exam.Instructions.Count)
+            return;
+
+        (Exam.Instructions[index], Exam.Instructions[target]) = (Exam.Instructions[target], Exam.Instructions[index]);
+        (rowIds[index], rowIds[target]) = (rowIds[target], rowIds[index]);
+
+        // Keep the focus on the button that was pressed, or on its twin once the row reaches the end.
+        var canMoveFurther = delta < 0 ? target > 0 : target < Exam.Instructions.Count - 1;
+        var direction = (delta < 0) == canMoveFurther ? "up" : "down";
+        focusId = ButtonId(rowIds[target], direction);
+
+        OnEdited();
+    }
+
+    private void Remove(int index)
+    {
+        Exam.Instructions.RemoveAt(index);
+        rowIds.RemoveAt(index);
+        focusId = rowIds.Count == 0 ? "instruction-add" : TextId(rowIds[Math.Min(index, rowIds.Count - 1)]);
+        OnEdited();
+    }
+
+    private void Add()
+    {
+        if (Exam.Instructions.Count >= ExamLimits.MaxInstructions)
+            return;
+
+        Exam.Instructions.Add("");
+        rowIds.Add(nextRowId++);
+        focusId = TextId(rowIds[^1]);
+        OnEdited();
+    }
+
+    private static string TextId(int rowId) => $"instruction-{rowId}";
+
+    private static string ButtonId(int rowId, string direction) => $"instruction-{rowId}-{direction}";
+}

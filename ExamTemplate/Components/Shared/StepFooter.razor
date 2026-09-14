@@ -1,0 +1,21 @@
+<nav class="step-footer" aria-label="خطوات إعداد الامتحان">
+    @if (PreviousHref is not null)
+    {
+        <a class="btn btn-outline-secondary" href="@PreviousHref">
+            <span aria-hidden="true">→</span> السابق: @PreviousText
+        </a>
+    }
+    @if (NextHref is not null)
+    {
+        <a class="btn btn-primary ms-auto" href="@NextHref">
+            التالي: @NextText <span aria-hidden="true">←</span>
+        </a>
+    }
+</nav>
+
+@code {
+    [Parameter] public string? PreviousHref { get; set; }
+    [Parameter] public string PreviousText { get; set; } = "";
+    [Parameter] public string? NextHref { get; set; }
+    [Parameter] public string NextText { get; set; } = "";
+}
