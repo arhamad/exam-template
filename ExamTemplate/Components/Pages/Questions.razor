@@ -1,0 +1,76 @@
+@page "/exam/questions"
+@inherits ExamPageBase
+
+<PageTitle>الأسئلة – مولّد الامتحانات</PageTitle>
+
+<header class="page-header">
+    <h1>الأسئلة</h1>
+    <p class="page-lead">
+        تُرقَّم الأسئلة بالتسلسل عبر الأقسام. عند توليد أكثر من نموذج تُخلط الأسئلة داخل قسمها فقط،
+        وتُخلط خيارات أسئلة الاختيار من متعدد ما لم تُثبَّت.
+    </p>
+</header>
+
+@if (IsLoading)
+{
+    <div class="loading-state" role="status">
+        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        جارٍ تحميل المسودة…
+    </div>
+}
+else if (Exam is not { } exam)
+{
+    <NoExamNotice/>
+}
+else
+{
+    <FieldIssues Issues="ExamLevelIssues" Id="issues-Sections"/>
+
+    var firstNumber = 1;
+    for (var index = 0; index < exam.Sections.Count; index++)
+    {
+        var section = exam.Sections[index];
+        <SectionEditor @key="section.Id" Exam="exam" Section="section" Index="index" FirstNumber="firstNumber"
+                       OnStructureChanged="StructureChanged"/>
+        firstNumber += section.Questions.Count;
+    }
+
+    @if (exam.Sections.Count == 0)
+    {
+        <div class="empty-state mb-3">
+            <p class="mb-0">لا توجد أقسام. أضف قسمًا لتبدأ كتابة الأسئلة.</p>
+        </div>
+    }
+
+    <div class="add-section-bar">
+        <button id="section-add" type="button" class="btn btn-outline-primary"
+                disabled="@(exam.Sections.Count >= ExamLimits.MaxSections)" @onclick="AddSection">
+            <Icon Name="plus"/> إضافة قسم
+        </button>
+        @if (exam.Sections.Count >= ExamLimits.MaxSections)
+        {
+            <span class="form-hint">الحد الأقصى @ExamLimits.MaxSections قسمًا.</span>
+        }
+    </div>
+
+    <StepFooter PreviousHref="exam/details" PreviousText="معلومات الامتحان" NextHref="exam/generate" NextText="التوليد والتصدير"/>
+}
+
+@code {
+    // Exam-wide content issues (no questions at all, answers clustered on one letter) once all issues are shown.
+    private IEnumerable<ValidationIssue> ExamLevelIssues =>
+        Draft.ShowAllIssues ? Draft.Validation.ForField(nameof(ExamDefinition.Sections)) : [];
+
+    private void StructureChanged(string? focusId) => FocusAfterRender(focusId);
+
+    private void AddSection()
+    {
+        if (Exam is null || Exam.Sections.Count >= ExamLimits.MaxSections)
+            return;
+
+        var section = new ExamSection();
+        Exam.Sections.Add(section);
+        Draft.NotifyChanged();
+        FocusAfterRender($"s-{section.Id}-title-input");
+    }
+}

@@ -1,0 +1,109 @@
+@inject BrowserInterop Browser
+
+<fieldset class="options-editor">
+    <legend class="form-label">الخيارات <span class="form-hint">حدّد الإجابة الصحيحة بالدائرة المجاورة لها</span></legend>
+
+    <ol class="option-list">
+        @for (var index = 0; index < Question.Options.Count; index++)
+        {
+            var option = Question.Options[index];
+            var label = ArabicText.OptionLabel(index);
+            var optionIssues = Issues.Where(issue => issue.OptionId == option.Id).ToList();
+            var hasError = optionIssues.Any(issue => issue.Severity == IssueSeverity.Error);
+            <li @key="option.Id" class="option-row @(option.IsCorrect ? "is-correct" : null)">
+                <input id="@($"o-{option.Id}-correct")" class="form-check-input option-radio" type="radio"
+                       name="@($"correct-{Question.Id}")" checked="@option.IsCorrect"
+                       aria-label="@($"الخيار ({label}) هو الإجابة الصحيحة")"
+                       @onchange="() => SetCorrectAsync(option)"/>
+                <label class="option-label" for="@($"o-{option.Id}-correct")" aria-hidden="true">@label</label>
+                <div class="option-text">
+                    <input id="@($"o-{option.Id}-text")" class="form-control" dir="auto" maxlength="@ExamLimits.MaxOptionTextLength"
+                           aria-label="@($"نص الخيار ({label})")"
+                           aria-invalid="@(hasError ? "true" : null)"
+                           aria-describedby="@(optionIssues.Count > 0 ? $"o-{option.Id}-issues" : null)"
+                           @bind="option.Text" @bind:after="() => OnEdited.InvokeAsync(OptionTextKey(option.Id))"
+                           @onblur="() => OnTouched.InvokeAsync(OptionTextKey(option.Id))"/>
+                    <FieldIssues Issues="optionIssues" Id="@($"o-{option.Id}-issues")"/>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger icon-button" title="حذف الخيار"
+                        aria-label="@($"حذف الخيار ({label})")"
+                        disabled="@(Question.Options.Count <= ExamLimits.MinOptions)" @onclick="() => RemoveAsync(option)">
+                    <Icon Name="trash"/>
+                </button>
+            </li>
+        }
+    </ol>
+
+    <FieldIssues Issues="Issues.Where(issue => issue.OptionId is null)" Id="@($"q-{Question.Id}-options-issues")"/>
+
+    <div class="options-footer">
+        <button id="@AddButtonId" type="button" class="btn btn-sm btn-outline-primary"
+                disabled="@(Question.Options.Count >= ExamLimits.MaxOptions)" @onclick="AddAsync">
+            <Icon Name="plus"/> إضافة خيار
+        </button>
+        <div class="form-check form-switch mb-0">
+            <input id="@($"q-{Question.Id}-keep-order")" class="form-check-input" type="checkbox" role="switch"
+                   @bind="Question.KeepOptionOrder" @bind:after="() => OnEdited.InvokeAsync(OptionsKey)"/>
+            <label class="form-check-label" for="@($"q-{Question.Id}-keep-order")">الحفاظ على ترتيب الخيارات عند الخلط</label>
+        </div>
+    </div>
+</fieldset>
+
+@code {
+    /// <summary>Touch key for the option list as a whole (correct answer, count, order).</summary>
+    public const string OptionsKey = "Options";
+
+    private string? focusId;
+
+    [Parameter, EditorRequired] public ExamQuestion Question { get; set; } = default!;
+
+    /// <summary>The visible option-related issues of this question.</summary>
+    [Parameter] public IReadOnlyList<ValidationIssue> Issues { get; set; } = [];
+
+    /// <summary>Raised after an edit, with the touch key of the edited field.</summary>
+    [Parameter] public EventCallback<string> OnEdited { get; set; }
+
+    /// <summary>Raised when a field loses focus, with its touch key.</summary>
+    [Parameter] public EventCallback<string> OnTouched { get; set; }
+
+    private string AddButtonId => $"q-{Question.Id}-add-option";
+
+    public static string OptionTextKey(Guid optionId) => $"OptionText:{optionId}";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (focusId is { } id)
+        {
+            focusId = null;
+            await Browser.FocusElementAsync(id);
+        }
+    }
+
+    private Task SetCorrectAsync(ExamOption option)
+    {
+        ExamEditing.SetCorrectOption(Question, option.Id);
+        return OnEdited.InvokeAsync(OptionsKey);
+    }
+
+    private Task AddAsync()
+    {
+        if (Question.Options.Count >= ExamLimits.MaxOptions)
+            return Task.CompletedTask;
+
+        var option = new ExamOption();
+        Question.Options.Add(option);
+        focusId = $"o-{option.Id}-text";
+        return OnEdited.InvokeAsync(OptionsKey);
+    }
+
+    private Task RemoveAsync(ExamOption option)
+    {
+        var index = Question.Options.IndexOf(option);
+        if (index < 0 || Question.Options.Count <= ExamLimits.MinOptions)
+            return Task.CompletedTask;
+
+        Question.Options.RemoveAt(index);
+        focusId = index < Question.Options.Count ? $"o-{Question.Options[index].Id}-text" : AddButtonId;
+        return OnEdited.InvokeAsync(OptionsKey);
+    }
+}

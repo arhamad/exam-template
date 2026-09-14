@@ -1,0 +1,256 @@
+@inject ExamDraftState Draft
+@inject BrowserInterop Browser
+
+@{
+    var visible = Draft.Validation.ForQuestion(Question.Id).Where(IsVisible).ToList();
+    var isFirst = IndexInSection == 0;
+    var isLast = IndexInSection == Section.Questions.Count - 1;
+}
+
+<article id="@CardId" class="question-card focus-target" tabindex="-1" aria-labelledby="@($"{CardId}-title")">
+    <header class="question-header">
+        <h3 id="@($"{CardId}-title")" class="question-title">
+            <span class="question-number">السؤال @Number</span>
+            <span class="type-badge @TypeClass">@ArabicText.TypeLabel(Question.Type)</span>
+        </h3>
+
+        <div class="question-marks">
+            <label class="form-label mb-0" for="@FieldId("marks")">العلامة<span class="required-mark" aria-hidden="true">*</span></label>
+            <input id="@FieldId("marks")" type="number" class="form-control form-control-sm marks-input" dir="ltr"
+                   min="0" max="@ExamLimits.MaxMarks" step="any" aria-required="true"
+                   aria-invalid="@InvalidFor(visible, nameof(ExamQuestion.Marks))"
+                   @bind="Question.Marks" @bind:after="() => Edited(nameof(ExamQuestion.Marks))"
+                   @onblur="() => Touch(nameof(ExamQuestion.Marks))"/>
+        </div>
+
+        <div class="question-actions" role="group" aria-label="@($"إجراءات السؤال {Number}")">
+            <button id="@FieldId("up")" type="button" class="btn btn-sm btn-outline-secondary icon-button"
+                    title="نقل للأعلى" aria-label="@($"نقل السؤال {Number} للأعلى")" disabled="@isFirst"
+                    @onclick="() => MoveAsync(-1)">
+                <Icon Name="up"/>
+            </button>
+            <button id="@FieldId("down")" type="button" class="btn btn-sm btn-outline-secondary icon-button"
+                    title="نقل للأسفل" aria-label="@($"نقل السؤال {Number} للأسفل")" disabled="@isLast"
+                    @onclick="() => MoveAsync(1)">
+                <Icon Name="down"/>
+            </button>
+            @if (Exam.Sections.Count > 1)
+            {
+                <select class="form-select form-select-sm move-select" aria-label="@($"نقل السؤال {Number} إلى قسم آخر")"
+                        @onchange="MoveToSectionAsync">
+                    <option value="" selected>نقل إلى قسم…</option>
+                    @for (var index = 0; index < Exam.Sections.Count; index++)
+                    {
+                        var target = Exam.Sections[index];
+                        if (target == Section)
+                        {
+                            continue;
+                        }
+                        <option value="@target.Id">@SectionLabel(index, target)</option>
+                    }
+                </select>
+            }
+            <button type="button" class="btn btn-sm btn-outline-secondary icon-button" title="تكرار السؤال"
+                    aria-label="@($"تكرار السؤال {Number}")" disabled="@(Exam.QuestionCount() >= ExamLimits.MaxQuestions)"
+                    @onclick="DuplicateAsync">
+                <Icon Name="copy"/>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger icon-button" title="حذف السؤال"
+                    aria-label="@($"حذف السؤال {Number}")" @onclick="DeleteAsync">
+                <Icon Name="trash"/>
+            </button>
+        </div>
+    </header>
+
+    <FieldIssues Issues="IssuesFor(visible, nameof(ExamQuestion.Marks))" Id="@FieldId("marks-issues")"/>
+
+    <div class="question-field">
+        <label class="form-label" for="@FieldId("text")">نص السؤال<span class="required-mark" aria-hidden="true">*</span></label>
+        <textarea id="@FieldId("text")" class="form-control" rows="2" maxlength="@ExamLimits.MaxQuestionTextLength" aria-required="true"
+                  aria-invalid="@InvalidFor(visible, nameof(ExamQuestion.Text))"
+                  aria-describedby="@DescribedBy(visible, nameof(ExamQuestion.Text), "text-issues")"
+                  @bind="Question.Text" @bind:after="() => Edited(nameof(ExamQuestion.Text))"
+                  @onblur="() => Touch(nameof(ExamQuestion.Text))"></textarea>
+        <FieldIssues Issues="IssuesFor(visible, nameof(ExamQuestion.Text))" Id="@FieldId("text-issues")"/>
+    </div>
+
+    @switch (Question.Type)
+    {
+        case QuestionType.MultipleChoice:
+            <McqOptionsEditor Question="Question" Issues="visible.Where(IsOptionIssue).ToList()"
+                              OnEdited="Edited" OnTouched="Touch"/>
+            break;
+
+        case QuestionType.TrueFalse:
+            <fieldset class="question-field">
+                <legend class="form-label">الإجابة الصحيحة<span class="required-mark" aria-hidden="true">*</span></legend>
+                <div class="tf-choices">
+                    <div class="form-check form-check-inline">
+                        <input id="@FieldId("true")" class="form-check-input" type="radio" name="@FieldId("tf")"
+                               checked="@(Question.TrueFalseAnswer == true)" @onchange="() => SetTrueFalseAsync(true)"/>
+                        <label class="form-check-label" for="@FieldId("true")">@ArabicText.TrueFalse(true)</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input id="@FieldId("false")" class="form-check-input" type="radio" name="@FieldId("tf")"
+                               checked="@(Question.TrueFalseAnswer == false)" @onchange="() => SetTrueFalseAsync(false)"/>
+                        <label class="form-check-label" for="@FieldId("false")">@ArabicText.TrueFalse(false)</label>
+                    </div>
+                </div>
+                <FieldIssues Issues="IssuesFor(visible, nameof(ExamQuestion.TrueFalseAnswer))" Id="@FieldId("tf-issues")"/>
+            </fieldset>
+            break;
+
+        case QuestionType.Essay:
+            <div class="row g-3 question-field">
+                <div class="col-sm-5 col-lg-3">
+                    <label class="form-label" for="@FieldId("lines")">عدد أسطر الإجابة</label>
+                    <input id="@FieldId("lines")" type="number" class="form-control" dir="ltr"
+                           min="@ExamLimits.MinAnswerLines" max="@ExamLimits.MaxAnswerLines" step="1"
+                           aria-invalid="@InvalidFor(visible, nameof(ExamQuestion.AnswerLines))"
+                           @bind="Question.AnswerLines" @bind:after="() => Edited(nameof(ExamQuestion.AnswerLines))"/>
+                    <div class="form-text">أسطر فارغة للكتابة في نسخة الطالب (@ExamLimits.MinAnswerLines–@ExamLimits.MaxAnswerLines).</div>
+                    <FieldIssues Issues="IssuesFor(visible, nameof(ExamQuestion.AnswerLines))" Id="@FieldId("lines-issues")"/>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="@FieldId("model")">الإجابة النموذجية</label>
+                    <textarea id="@FieldId("model")" class="form-control" rows="3" maxlength="@ExamLimits.MaxModelAnswerLength"
+                              @bind="Question.ModelAnswer" @bind:after="() => Edited(nameof(ExamQuestion.ModelAnswer))"
+                              @onblur="() => Touch(nameof(ExamQuestion.ModelAnswer))"></textarea>
+                    <div class="form-text">تظهر في مفتاح الإجابة فقط.</div>
+                    <FieldIssues Issues="IssuesFor(visible, nameof(ExamQuestion.ModelAnswer))" Id="@FieldId("model-issues")"/>
+                </div>
+            </div>
+            break;
+    }
+
+    <div class="question-field">
+        <label class="form-label" for="@FieldId("note")">ملاحظة <span class="form-hint">اختيارية، تُطبع تحت نص السؤال</span></label>
+        <textarea id="@FieldId("note")" class="form-control" rows="1" maxlength="@ExamLimits.MaxNoteLength"
+                  @bind="Question.Note" @bind:after="() => Edited(nameof(ExamQuestion.Note))"></textarea>
+        <FieldIssues Issues="IssuesFor(visible, nameof(ExamQuestion.Note))" Id="@FieldId("note-issues")"/>
+    </div>
+</article>
+
+@code {
+    private const int SectionLabelTitleLength = 40;
+
+    // Issues are shown for fields the author has touched, or all of them after visiting the generate page.
+    private readonly HashSet<string> touched = [];
+
+    [Parameter, EditorRequired] public ExamDefinition Exam { get; set; } = default!;
+    [Parameter, EditorRequired] public ExamSection Section { get; set; } = default!;
+    [Parameter, EditorRequired] public ExamQuestion Question { get; set; } = default!;
+
+    /// <summary>Continuous number across all sections.</summary>
+    [Parameter] public int Number { get; set; }
+
+    [Parameter] public int IndexInSection { get; set; }
+
+    /// <summary>Raised after a structural edit (move, duplicate, delete) with the id of the element to focus.</summary>
+    [Parameter] public EventCallback<string?> OnStructureChanged { get; set; }
+
+    private string CardId => $"q-{Question.Id}";
+
+    private string TypeClass => Question.Type switch
+    {
+        QuestionType.MultipleChoice => "is-mcq",
+        QuestionType.TrueFalse => "is-tf",
+        _ => "is-essay",
+    };
+
+    private string FieldId(string name) => $"{CardId}-{name}";
+
+    private bool IsVisible(ValidationIssue issue) => Draft.ShowAllIssues || touched.Contains(TouchKey(issue));
+
+    private static string TouchKey(ValidationIssue issue) => issue.Field switch
+    {
+        "OptionText" => McqOptionsEditor.OptionTextKey(issue.OptionId ?? Guid.Empty),
+        "CorrectOption" or nameof(ExamQuestion.Options) or nameof(ExamQuestion.KeepOptionOrder) => McqOptionsEditor.OptionsKey,
+        var field => field,
+    };
+
+    private static bool IsOptionIssue(ValidationIssue issue) =>
+        issue.Field is "OptionText" or "CorrectOption" or nameof(ExamQuestion.Options) or nameof(ExamQuestion.KeepOptionOrder);
+
+    private static IEnumerable<ValidationIssue> IssuesFor(List<ValidationIssue> visible, string field) =>
+        visible.Where(issue => issue.Field == field);
+
+    private static string? InvalidFor(List<ValidationIssue> visible, string field) =>
+        visible.Any(issue => issue.Field == field && issue.Severity == IssueSeverity.Error) ? "true" : null;
+
+    private string? DescribedBy(List<ValidationIssue> visible, string field, string issuesName) =>
+        visible.Any(issue => issue.Field == field) ? FieldId(issuesName) : null;
+
+    private static string SectionLabel(int index, ExamSection section)
+    {
+        var title = section.Title.Trim();
+        if (title.Length > SectionLabelTitleLength)
+            title = title[..SectionLabelTitleLength] + "…";
+        return title.Length == 0 ? $"القسم {index + 1}" : $"القسم {index + 1}: {title}";
+    }
+
+    private void Touch(string key) => touched.Add(key);
+
+    private void Edited(string key)
+    {
+        touched.Add(key);
+        Draft.NotifyChanged();
+    }
+
+    private Task SetTrueFalseAsync(bool answer)
+    {
+        Question.TrueFalseAnswer = answer;
+        Edited(nameof(ExamQuestion.TrueFalseAnswer));
+        return Task.CompletedTask;
+    }
+
+    private Task MoveAsync(int delta)
+    {
+        if (!ExamEditing.MoveQuestion(Exam, Question.Id, delta))
+            return Task.CompletedTask;
+
+        Draft.NotifyChanged();
+
+        // Keep the focus on the pressed button, or on its twin once the question reaches the end.
+        var newIndex = IndexInSection + delta;
+        var canMoveFurther = delta < 0 ? newIndex > 0 : newIndex < Section.Questions.Count - 1;
+        return OnStructureChanged.InvokeAsync(FieldId((delta < 0) == canMoveFurther ? "up" : "down"));
+    }
+
+    private Task MoveToSectionAsync(ChangeEventArgs e)
+    {
+        if (!Guid.TryParse(e.Value?.ToString(), out var targetId)
+            || !ExamEditing.MoveQuestionToSection(Exam, Question.Id, targetId))
+        {
+            return Task.CompletedTask;
+        }
+
+        Draft.NotifyChanged();
+        return OnStructureChanged.InvokeAsync(CardId);
+    }
+
+    private Task DuplicateAsync()
+    {
+        if (Exam.QuestionCount() >= ExamLimits.MaxQuestions || ExamEditing.DuplicateQuestion(Exam, Question.Id) is not { } copy)
+            return Task.CompletedTask;
+
+        Draft.NotifyChanged();
+        return OnStructureChanged.InvokeAsync($"q-{copy.Id}");
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (!await Browser.ConfirmAsync($"حذف السؤال {Number} نهائيًا؟"))
+            return;
+
+        var questions = Section.Questions;
+        var index = questions.IndexOf(Question);
+        var neighbour = index + 1 < questions.Count ? questions[index + 1] : index > 0 ? questions[index - 1] : null;
+
+        if (!ExamEditing.RemoveQuestion(Exam, Question.Id))
+            return;
+
+        Draft.NotifyChanged();
+        await OnStructureChanged.InvokeAsync(neighbour is null ? $"s-{Section.Id}-add" : $"q-{neighbour.Id}");
+    }
+}

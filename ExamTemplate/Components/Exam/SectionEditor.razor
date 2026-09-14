@@ -1,0 +1,156 @@
+@inject ExamDraftState Draft
+@inject BrowserInterop Browser
+
+@{
+    var isFirst = Index == 0;
+    var isLast = Index == Exam.Sections.Count - 1;
+    var questionLimitReached = Exam.QuestionCount() >= ExamLimits.MaxQuestions;
+}
+
+<section id="@SectionId" class="exam-section focus-target" tabindex="-1" aria-labelledby="@($"{SectionId}-heading")">
+    <header class="section-header">
+        <div class="section-heading">
+            <h2 id="@($"{SectionId}-heading")" class="section-title">القسم @(Index + 1)</h2>
+            <SectionSummary Section="Section"/>
+        </div>
+        <div class="section-actions" role="group" aria-label="@($"إجراءات القسم {Index + 1}")">
+            <button id="@($"{SectionId}-up")" type="button" class="btn btn-sm btn-outline-secondary icon-button"
+                    title="نقل القسم للأعلى" aria-label="@($"نقل القسم {Index + 1} للأعلى")" disabled="@isFirst"
+                    @onclick="() => MoveAsync(-1)">
+                <Icon Name="up"/>
+            </button>
+            <button id="@($"{SectionId}-down")" type="button" class="btn btn-sm btn-outline-secondary icon-button"
+                    title="نقل القسم للأسفل" aria-label="@($"نقل القسم {Index + 1} للأسفل")" disabled="@isLast"
+                    @onclick="() => MoveAsync(1)">
+                <Icon Name="down"/>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger" aria-label="@($"حذف القسم {Index + 1}")"
+                    @onclick="DeleteAsync">
+                <Icon Name="trash"/> حذف القسم
+            </button>
+        </div>
+    </header>
+
+    <div class="row g-3 section-fields">
+        <div class="col-md-6">
+            <label class="form-label" for="@($"{SectionId}-title-input")">عنوان القسم <span class="form-hint">اختياري</span></label>
+            <input id="@($"{SectionId}-title-input")" class="form-control" maxlength="@ExamLimits.MaxSectionTitleLength"
+                   placeholder="مثال: القسم الأول: أسئلة موضوعية"
+                   @bind="Section.Title" @bind:after="() => Edited(nameof(ExamSection.Title))"/>
+            <FieldIssues Issues="IssuesFor(nameof(ExamSection.Title))" Id="@($"{SectionId}-title-issues")"/>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="@($"{SectionId}-instruction")">تعليمات القسم <span class="form-hint">اختيارية</span></label>
+            <textarea id="@($"{SectionId}-instruction")" class="form-control" rows="1" maxlength="@ExamLimits.MaxInstructionLength"
+                      placeholder="مثال: اختر/ي الإجابة الأكثر صحة لكل سؤال."
+                      @bind="Section.Instruction" @bind:after="() => Edited(nameof(ExamSection.Instruction))"></textarea>
+            <FieldIssues Issues="IssuesFor(nameof(ExamSection.Instruction))" Id="@($"{SectionId}-instruction-issues")"/>
+        </div>
+    </div>
+
+    <FieldIssues Issues="IssuesFor(nameof(ExamSection.Questions))" Id="@($"{SectionId}-questions-issues")"/>
+
+    @if (Section.Questions.Count == 0)
+    {
+        <p class="section-empty">لا توجد أسئلة في هذا القسم بعد. أضف سؤالًا بأحد الأزرار أدناه.</p>
+    }
+
+    <div class="question-list">
+        @for (var index = 0; index < Section.Questions.Count; index++)
+        {
+            var question = Section.Questions[index];
+            <QuestionCard @key="question.Id" Exam="Exam" Section="Section" Question="question"
+                          Number="FirstNumber + index" IndexInSection="index" OnStructureChanged="OnStructureChanged"/>
+        }
+    </div>
+
+    <div id="@($"{SectionId}-add")" class="add-question-bar" tabindex="-1" role="group"
+         aria-label="@($"إضافة سؤال إلى القسم {Index + 1}")">
+        <span class="add-question-label">إضافة سؤال:</span>
+        @foreach (var type in QuestionTypes)
+        {
+            <button type="button" class="btn btn-sm btn-outline-primary" disabled="@questionLimitReached"
+                    @onclick="() => AddQuestionAsync(type)">
+                <Icon Name="plus"/> @ArabicText.TypeLabel(type)
+            </button>
+        }
+        @if (questionLimitReached)
+        {
+            <span class="form-hint">بلغ الامتحان الحد الأقصى (@ExamLimits.MaxQuestions سؤال).</span>
+        }
+    </div>
+</section>
+
+@code {
+    private static readonly QuestionType[] QuestionTypes = [QuestionType.MultipleChoice, QuestionType.TrueFalse, QuestionType.Essay];
+
+    private readonly HashSet<string> touched = [];
+
+    [Parameter, EditorRequired] public ExamDefinition Exam { get; set; } = default!;
+    [Parameter, EditorRequired] public ExamSection Section { get; set; } = default!;
+
+    /// <summary>Zero-based position of the section.</summary>
+    [Parameter] public int Index { get; set; }
+
+    /// <summary>Number of the section's first question (numbering continues across sections).</summary>
+    [Parameter] public int FirstNumber { get; set; } = 1;
+
+    /// <summary>Raised after a structural edit with the id of the element to focus once the page re-renders.</summary>
+    [Parameter] public EventCallback<string?> OnStructureChanged { get; set; }
+
+    private string SectionId => $"s-{Section.Id}";
+
+    // "Section has no questions" only appears once all issues are shown; title and instruction once edited.
+    private IEnumerable<ValidationIssue> IssuesFor(string field) =>
+        Draft.ShowAllIssues || touched.Contains(field)
+            ? Draft.Validation.ForSection(Section.Id).Where(issue => issue.Field == field)
+            : [];
+
+    private void Edited(string field)
+    {
+        touched.Add(field);
+        Draft.NotifyChanged();
+    }
+
+    private Task AddQuestionAsync(QuestionType type)
+    {
+        if (Exam.QuestionCount() >= ExamLimits.MaxQuestions)
+            return Task.CompletedTask;
+
+        var question = ExamQuestion.Create(type);
+        Section.Questions.Add(question);
+        Draft.NotifyChanged();
+        return OnStructureChanged.InvokeAsync($"q-{question.Id}-text");
+    }
+
+    private Task MoveAsync(int delta)
+    {
+        if (!ExamEditing.MoveSection(Exam, Section.Id, delta))
+            return Task.CompletedTask;
+
+        Draft.NotifyChanged();
+
+        var newIndex = Index + delta;
+        var canMoveFurther = delta < 0 ? newIndex > 0 : newIndex < Exam.Sections.Count - 1;
+        return OnStructureChanged.InvokeAsync($"{SectionId}-{((delta < 0) == canMoveFurther ? "up" : "down")}");
+    }
+
+    private async Task DeleteAsync()
+    {
+        var count = Section.Questions.Count;
+        if (count > 0 && !await Browser.ConfirmAsync(
+                $"حذف القسم {Index + 1} وما فيه ({ArabicText.Questions(count)})؟ لا يمكن التراجع عن ذلك."))
+        {
+            return;
+        }
+
+        var index = Exam.Sections.IndexOf(Section);
+        var neighbour = index + 1 < Exam.Sections.Count ? Exam.Sections[index + 1] : index > 0 ? Exam.Sections[index - 1] : null;
+
+        if (!ExamEditing.RemoveSection(Exam, Section.Id))
+            return;
+
+        Draft.NotifyChanged();
+        await OnStructureChanged.InvokeAsync(neighbour is null ? "section-add" : $"s-{neighbour.Id}");
+    }
+}

@@ -1,0 +1,12 @@
+@inherits DraftSubscriber
+
+@* Live question count and marks of one section; updates while marks are edited in the cards below. *@
+<span class="section-summary">
+    @(Section.Questions.Count == 0 ? "لا توجد أسئلة" : ArabicText.Questions(Section.Questions.Count))
+    <span aria-hidden="true">·</span>
+    @ArabicText.Marks(Section.TotalMarks())
+</span>
+
+@code {
+    [Parameter, EditorRequired] public ExamSection Section { get; set; } = default!;
+}
