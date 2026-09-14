@@ -129,9 +129,9 @@ public sealed class PaperWording
     /// <summary>The version letter in Latin script (A–D), for file names.</summary>
     public static char VersionLatin(int index) => (char)('A' + CheckIndex(index, ExamLimits.MaxVersions));
 
-    public string Marks(decimal marks) => IsRightToLeft ? ArabicText.Marks(marks) : Counted(marks, "mark", "marks");
+    public string Marks(decimal marks) => IsRightToLeft ? ArabicText.Marks(marks) : EnglishText.Marks(marks);
 
-    public string Questions(int count) => IsRightToLeft ? ArabicText.Questions(count) : Counted(count, "question", "questions");
+    public string Questions(int count) => IsRightToLeft ? ArabicText.Questions(count) : EnglishText.Questions(count);
 
     public string OptionLabel(int index) => OptionLabels[CheckIndex(index, OptionLabels.Count)];
 
@@ -143,8 +143,6 @@ public sealed class PaperWording
     public string AnswerKeyBanner(string letter) => $"{AnswerKey} – {VersionName(letter)} – {ExaminersOnly}";
 
     public string TrueFalse(bool value) => value ? TrueWord : FalseWord;
-
-    private static string Counted(decimal value, string one, string many) => $"{ArabicText.Number(value)} {(value == 1 ? one : many)}";
 
     private static int CheckIndex(int index, int count) =>
         index >= 0 && index < count ? index : throw new ArgumentOutOfRangeException(nameof(index), index, null);

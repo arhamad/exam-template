@@ -151,7 +151,7 @@ public sealed class ExamDraftState(BrowserInterop browser, ILogger<ExamDraftStat
         }
         catch (ExamJsonException exception)
         {
-            RestoreError = $"تعذّرت استعادة المسودة المحفوظة في هذا المتصفح: {exception.Message}";
+            RestoreError = $"تعذّرت استعادة المسودة المحفوظة في هذا المتصفح: {exception.UserMessage.Arabic}";
             logger.LogWarning(exception, "The draft stored in the browser could not be read.");
         }
         catch (JSDisconnectedException)

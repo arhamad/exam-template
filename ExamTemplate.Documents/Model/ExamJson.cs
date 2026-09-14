@@ -7,7 +7,7 @@ namespace ExamTemplate.Documents.Model;
 /// <summary>Reads and writes exam files (JSON).</summary>
 public static class ExamJson
 {
-    private const string NotAnExamFile = "الملف ليس ملف امتحان صالحًا.";
+    private static readonly LocalizedText NotAnExamFile = new("الملف ليس ملف امتحان صالحًا.", "The file isn't a valid exam file.");
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -50,8 +50,10 @@ public static class ExamJson
         }
         catch (JsonException exception)
         {
-            var line = exception.LineNumber is { } number ? $" (السطر {number + 1})" : "";
-            throw new ExamJsonException($"تعذّرت قراءة الملف: صيغة JSON غير صالحة{line}.", exception);
+            var line = exception.LineNumber + 1;
+            throw new ExamJsonException(new LocalizedText(
+                $"تعذّرت قراءة الملف: صيغة JSON غير صالحة{(line is null ? "" : $" (السطر {line})")}.",
+                $"The file couldn't be read: the JSON isn't valid{(line is null ? "" : $" (line {line})")}."), exception);
         }
     }
 
@@ -67,7 +69,9 @@ public static class ExamJson
         }
 
         if (schemaVersion > ExamDefinition.CurrentSchemaVersion)
-            throw new ExamJsonException("أُنشئ هذا الملف بإصدار أحدث من التطبيق ولا يمكن فتحه.");
+            throw new ExamJsonException(new LocalizedText(
+                "أُنشئ هذا الملف بإصدار أحدث من التطبيق ولا يمكن فتحه.",
+                "This file was created by a newer version of the app and can't be opened."));
     }
 
     private static void CheckStructure(ExamDefinition exam)
@@ -83,15 +87,22 @@ public static class ExamJson
         }
 
         var exceeded =
-            exam.Sections.Count > ExamLimits.MaxSections ? $"عدد الأقسام أكثر من {ExamLimits.MaxSections}" :
-            exam.QuestionCount() > ExamLimits.MaxQuestions ? $"عدد الأسئلة أكثر من {ExamLimits.MaxQuestions}" :
-            exam.Instructions.Count > ExamLimits.MaxInstructions ? $"عدد التعليمات أكثر من {ExamLimits.MaxInstructions}" :
+            exam.Sections.Count > ExamLimits.MaxSections
+                ? new LocalizedText($"عدد الأقسام أكثر من {ExamLimits.MaxSections}", $"more than {ExamLimits.MaxSections} sections") :
+            exam.QuestionCount() > ExamLimits.MaxQuestions
+                ? new LocalizedText($"عدد الأسئلة أكثر من {ExamLimits.MaxQuestions}", $"more than {ExamLimits.MaxQuestions} questions") :
+            exam.Instructions.Count > ExamLimits.MaxInstructions
+                ? new LocalizedText($"عدد التعليمات أكثر من {ExamLimits.MaxInstructions}", $"more than {ExamLimits.MaxInstructions} instructions") :
             exam.Sections.Any(section => section.Questions.Any(question => question.Options.Count > ExamLimits.MaxOptions))
-                ? $"يوجد سؤال بأكثر من {ExamLimits.MaxOptions} خيارات"
+                ? new LocalizedText($"يوجد سؤال بأكثر من {ExamLimits.MaxOptions} خيارات", $"a question with more than {ExamLimits.MaxOptions} options")
                 : null;
 
         if (exceeded is not null)
-            throw new ExamJsonException($"يتجاوز الملف الحدود المسموح بها: {exceeded}.");
+        {
+            throw new ExamJsonException(new LocalizedText(
+                $"يتجاوز الملف الحدود المسموح بها: {exceeded.Arabic}.",
+                $"The file exceeds the allowed limits: {exceeded.English}."));
+        }
     }
 
     private static void EnsureUniqueIds(ExamDefinition exam)

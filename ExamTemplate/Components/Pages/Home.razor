@@ -181,7 +181,7 @@ else
         }
         catch (ExamJsonException exception)
         {
-            ShowError(exception.Message);
+            ShowError(exception.UserMessage.Arabic);
             return;
         }
         catch (Exception exception) when (exception is not JSDisconnectedException)

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using ExamTemplate.Documents.Model;
 using ExamTemplate.Documents.Validation;
 using ExamTemplate.Tests.TestSupport;
@@ -81,7 +82,8 @@ public class ExamValidatorTests
         var issue = SingleError(exam);
 
         Assert.Equal(nameof(ExamDefinition.Sections), issue.Field);
-        Assert.Contains("سؤالًا واحدًا", issue.Message);
+        Assert.Contains("سؤالًا واحدًا", issue.Message.Arabic);
+        Assert.Equal("Add at least one question.", issue.Message.English);
     }
 
     [Fact]
@@ -102,7 +104,7 @@ public class ExamValidatorTests
             .Select(i => TestExams.TrueFalse($"عبارة {i}", 0.5m, true))
             .ToList();
 
-        Assert.Contains(ExamLimits.MaxQuestions.ToString(), SingleError(exam).Message);
+        Assert.Contains(ExamLimits.MaxQuestions.ToString(), SingleError(exam).Message.Arabic);
     }
 
     [Fact]
@@ -171,7 +173,9 @@ public class ExamValidatorTests
         var issue = SingleError(exam);
 
         Assert.Equal(option.Id, issue.OptionId);
-        Assert.Contains("(ب)", issue.Message);
+        Assert.Contains("(ب)", issue.Message.Arabic);
+        // Letters follow the exam, whichever language the interface shows the message in.
+        Assert.Contains("(ب)", issue.Message.English);
     }
 
     [Fact]
@@ -276,7 +280,7 @@ public class ExamValidatorTests
         exam.Sections[0].Questions.AddRange(
             Enumerable.Range(1, 3).Select(i => TestExams.Mcq($"سؤال {i}", 5, 2, "أول", "ثانٍ", "ثالث", "رابع")));
 
-        Assert.Contains("(ج)", SingleWarning(exam).Message);
+        Assert.Contains("(ج)", SingleWarning(exam).Message.Arabic);
     }
 
     [Fact]
@@ -299,8 +303,9 @@ public class ExamValidatorTests
 
         var message = SingleWarning(exam).Message;
 
-        Assert.Contains("(A)", message);
-        Assert.Contains("(C)", message);
+        Assert.Contains("(A)", message.Arabic);
+        Assert.Contains("(C)", message.Arabic);
+        Assert.Contains("version (A) are option (C)", message.English);
     }
 
     [Theory]
@@ -323,8 +328,81 @@ public class ExamValidatorTests
         var exam = TestExams.TwoSections();
         exam.Sections[1].Questions[0].Text = "";
 
-        Assert.Contains("السؤال 4", SingleError(exam).Message);
+        var message = SingleError(exam).Message;
+
+        Assert.Contains("السؤال 4", message.Arabic);
+        Assert.Contains("question 4", message.English);
     }
+
+    [Fact]
+    public void Every_issue_has_an_english_message_without_arabic_text()
+    {
+        var withoutSections = English(TestExams.Valid());
+        withoutSections.Sections.Clear();
+        var withoutQuestions = English(TestExams.Valid());
+        withoutQuestions.Sections[0].Questions.Clear();
+
+        var issues = new[] { EveryIssue(), withoutSections, withoutQuestions }
+            .SelectMany(exam => ExamValidator.Validate(exam).Issues)
+            .ToList();
+
+        // Every rule fires at least once. Numbers and letters vary between issues of the same kind.
+        var kinds = issues.Select(issue => Regex.Replace(issue.Message.English, @"\d+|\([A-H]\)", "#")).Distinct().ToList();
+        Assert.Equal(29, kinds.Count);
+        Assert.All(issues, issue =>
+        {
+            Assert.DoesNotContain(issue.Message.English, IsArabic);
+            Assert.Contains(issue.Message.Arabic, IsArabic);
+        });
+    }
+
+    private static ExamDefinition English(ExamDefinition exam)
+    {
+        exam.Language = ExamLanguage.English;
+        return exam;
+    }
+
+    /// <summary>An English exam that breaks every rule the validator checks once questions exist.</summary>
+    private static ExamDefinition EveryIssue()
+    {
+        var exam = English(TestExams.Valid());
+        exam.Header.UniversityName = "";
+        exam.Header.Semester = new string('x', ExamLimits.MaxHeaderFieldLength + 1);
+        exam.VersionCount = ExamLimits.MaxVersions + 1;
+        exam.ShuffleSeed = 0;
+        exam.Instructions = Enumerable.Repeat(new string('x', ExamLimits.MaxInstructionLength + 1), ExamLimits.MaxInstructions + 1).ToList();
+
+        var noText = TestExams.Mcq("", 0, 0, "One", "Two");
+        noText.Note = new string('x', ExamLimits.MaxNoteLength + 1);
+        var twoCorrect = TestExams.Mcq("Two correct", 1, 0, "One", "Two");
+        twoCorrect.Options[1].IsCorrect = true;
+        var noAnswer = TestExams.TrueFalse("No answer", 1, true);
+        noAnswer.TrueFalseAnswer = null;
+
+        var questions = exam.Sections[0].Questions;
+        questions.AddRange(
+        [
+            noText,
+            TestExams.Mcq(new string('x', ExamLimits.MaxQuestionTextLength + 1), 1.234m, 0, "Only one"),
+            TestExams.Mcq("Options", 1, -1, "", new string('x', ExamLimits.MaxOptionTextLength + 1), "Same", "same", "All of the above"),
+            twoCorrect,
+            noAnswer,
+            TestExams.Essay("Lines", 1, ExamLimits.MaxAnswerLines + 1, new string('x', ExamLimits.MaxModelAnswerLength + 1)),
+            TestExams.Essay("No model answer", 1, 3, ""),
+        ]);
+        questions.AddRange(Enumerable.Range(1, 4).Select(i => TestExams.Mcq($"Clustered {i}", 1, 0, "One", "Two")));
+        questions.AddRange(Enumerable.Range(1, ExamLimits.MaxQuestions).Select(i => TestExams.TrueFalse($"Statement {i}", 1, true)));
+
+        exam.Sections.Add(new ExamSection
+        {
+            Title = new string('x', ExamLimits.MaxSectionTitleLength + 1),
+            Instruction = new string('x', ExamLimits.MaxInstructionLength + 1),
+        });
+        exam.Sections.AddRange(Enumerable.Range(0, ExamLimits.MaxSections).Select(_ => new ExamSection()));
+        return exam;
+    }
+
+    private static bool IsArabic(char character) => character is >= (char)0x0600 and <= (char)0x06FF;
 
     private static ValidationIssue SingleError(ExamDefinition exam)
     {

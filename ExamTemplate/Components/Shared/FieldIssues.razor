@@ -8,7 +8,7 @@
             var isError = issue.Severity == IssueSeverity.Error;
             <li class="@(isError ? "is-error" : "is-warning")">
                 <Icon Name="@(isError ? "error" : "warning")"/>
-                <span><span class="visually-hidden">@(isError ? "خطأ: " : "تنبيه: ")</span>@issue.Message</span>
+                <span><span class="visually-hidden">@(isError ? "خطأ: " : "تنبيه: ")</span>@issue.Message.Arabic</span>
             </li>
         }
     </ul>

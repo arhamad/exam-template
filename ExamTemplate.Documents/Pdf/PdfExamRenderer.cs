@@ -1,4 +1,5 @@
 using ExamTemplate.Documents.Assets;
+using ExamTemplate.Documents.Model;
 using ExamTemplate.Documents.Papers;
 using ExamTemplate.Documents.Services;
 using QuestPDF.Fluent;
@@ -9,7 +10,9 @@ namespace ExamTemplate.Documents.Pdf;
 /// <summary>Lays out a paper as PDF with QuestPDF, mirroring the Word template's design. Thread-safe.</summary>
 internal sealed class PdfExamRenderer
 {
-    private const string FailureMessage = "تعذّر إنشاء ملف PDF. حاول مرة أخرى، وإن تكررت المشكلة فتواصل مع الدعم الفني.";
+    private static readonly LocalizedText FailureMessage = new(
+        "تعذّر إنشاء ملف PDF. حاول مرة أخرى، وإن تكررت المشكلة فتواصل مع الدعم الفني.",
+        "The PDF file couldn't be created. Try again, and if the problem continues, contact technical support.");
 
     private readonly byte[] _logo = ExamAssets.Read(ExamAssets.UniversityLogo);
 

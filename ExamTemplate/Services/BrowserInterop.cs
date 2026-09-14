@@ -48,7 +48,8 @@ public sealed class BrowserInterop(IJSRuntime js) : IAsyncDisposable
     {
         await using var data = await (await GetModuleAsync()).InvokeAsync<IJSStreamReference>("loadDraft");
         if (data.Length > MaxDraftBytes)
-            throw new ExamJsonException("المسودة المحفوظة أكبر من الحجم المسموح به.");
+            throw new ExamJsonException(new LocalizedText(
+                "المسودة المحفوظة أكبر من الحجم المسموح به.", "The saved draft is larger than the allowed size."));
 
         await using var stream = await data.OpenReadStreamAsync(MaxDraftBytes);
         using var buffer = new MemoryStream((int)data.Length);

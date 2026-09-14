@@ -10,7 +10,9 @@ namespace ExamTemplate.Documents.Word;
 /// <summary>Fills the embedded Word template of the paper's language. Thread-safe; one instance can serve all requests.</summary>
 internal sealed class WordExamRenderer
 {
-    private const string FailureMessage = "تعذّر إنشاء ملف Word. حاول مرة أخرى، وإن تكررت المشكلة فتواصل مع الدعم الفني.";
+    private static readonly LocalizedText FailureMessage = new(
+        "تعذّر إنشاء ملف Word. حاول مرة أخرى، وإن تكررت المشكلة فتواصل مع الدعم الفني.",
+        "The Word file couldn't be created. Try again, and if the problem continues, contact technical support.");
 
     private readonly Dictionary<ExamLanguage, byte[]> _templates = Enum.GetValues<ExamLanguage>()
         .ToDictionary(language => language, language => ExamAssets.Read(ExamAssets.WordTemplate(language)));

@@ -55,15 +55,15 @@ else
                         @if (LocalTarget(issue) is { } localId)
                         {
                             <a href="@($"exam/generate#{localId}")" @onclick="() => Browser.FocusElementAsync(localId, true)"
-                               @onclick:preventDefault>@issue.Message</a>
+                               @onclick:preventDefault>@issue.Message.Arabic</a>
                         }
                         else if (LinkFor(issue) is { } href)
                         {
-                            <a href="@href">@issue.Message</a>
+                            <a href="@href">@issue.Message.Arabic</a>
                         }
                         else
                         {
-                            <span>@issue.Message</span>
+                            <span>@issue.Message.Arabic</span>
                         }
                     </li>
                 }
@@ -358,12 +358,12 @@ else
         {
             Logger.LogInformation("Generation {Job} stopped by {ErrorCount} validation errors.", job,
                 exception.Report.Issues.Count(issue => issue.Severity == IssueSeverity.Error));
-            ShowError(exception.Message);
+            ShowError(exception.UserMessage.Arabic);
         }
-        catch (Exception exception) when (exception is ExamRenderException or ExamJsonException)
+        catch (ExamUserException exception)
         {
             Logger.LogError(exception, "Generation {Job} failed.", job);
-            ShowError(exception.Message);
+            ShowError(exception.UserMessage.Arabic);
         }
         catch (Exception exception)
         {

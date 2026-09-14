@@ -39,7 +39,7 @@ public class DemoExamsTests
     {
         var report = ExamValidator.Validate(DemoExams.EdgeCases());
 
-        Assert.False(report.HasErrors, string.Join("; ", report.Issues.Select(issue => issue.Message)));
+        Assert.False(report.HasErrors, string.Join("; ", report.Issues.Select(issue => issue.Message.Arabic)));
     }
 
     private static IEnumerable<Guid> Ids(ExamDefinition exam) =>

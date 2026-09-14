@@ -1,3 +1,5 @@
+using ExamTemplate.Documents.Model;
+
 namespace ExamTemplate.Documents.Validation;
 
 public enum IssueSeverity
@@ -9,7 +11,7 @@ public enum IssueSeverity
 /// <param name="Field">Property name of the offending field (e.g. <c>CourseName</c>, <c>Text</c>, <c>CorrectOption</c>).</param>
 public sealed record ValidationIssue(
     IssueSeverity Severity,
-    string Message,
+    LocalizedText Message,
     string Field,
     Guid? SectionId = null,
     Guid? QuestionId = null,

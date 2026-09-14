@@ -55,7 +55,7 @@ public class ExamJsonTests
     {
         var error = Assert.Throws<ExamJsonException>(() => ExamJson.Deserialize(json));
 
-        Assert.Equal("الملف ليس ملف امتحان صالحًا.", error.Message);
+        Assert.Equal("الملف ليس ملف امتحان صالحًا.", error.UserMessage.Arabic);
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public class ExamJsonTests
     {
         var error = Assert.Throws<ExamJsonException>(() => ExamJson.Deserialize("""{ "schemaVersion": 999 }"""));
 
-        Assert.Contains("إصدار أحدث", error.Message);
+        Assert.Contains("إصدار أحدث", error.UserMessage.Arabic);
     }
 
     [Fact]
@@ -71,7 +71,21 @@ public class ExamJsonTests
     {
         var error = Assert.Throws<ExamJsonException>(() => ExamJson.Deserialize("{ not json"));
 
-        Assert.Contains("JSON", error.Message);
+        Assert.Contains("صيغة JSON غير صالحة", error.UserMessage.Arabic);
+    }
+
+    [Fact]
+    public void Errors_have_an_english_message_that_is_also_the_log_message()
+    {
+        var notAnExam = Assert.Throws<ExamJsonException>(() => ExamJson.Deserialize("[1, 2, 3]"));
+        var newer = Assert.Throws<ExamJsonException>(() => ExamJson.Deserialize("""{ "schemaVersion": 999 }"""));
+        var malformed = Assert.Throws<ExamJsonException>(() => ExamJson.Deserialize("{\n  not json"));
+
+        Assert.Equal("The file isn't a valid exam file.", notAnExam.UserMessage.English);
+        Assert.Equal("This file was created by a newer version of the app and can't be opened.", newer.UserMessage.English);
+        Assert.Equal("The file couldn't be read: the JSON isn't valid (line 2).", malformed.UserMessage.English);
+        Assert.Contains("(السطر 2)", malformed.UserMessage.Arabic);
+        Assert.Equal(malformed.UserMessage.English, malformed.Message);
     }
 
     [Fact]
@@ -88,7 +102,8 @@ public class ExamJsonTests
 
         var error = Assert.Throws<ExamJsonException>(() => ExamJson.Deserialize(ExamJson.Serialize(exam)));
 
-        Assert.Contains(ExamLimits.MaxQuestions.ToString(), error.Message);
+        Assert.Contains($"عدد الأسئلة أكثر من {ExamLimits.MaxQuestions}", error.UserMessage.Arabic);
+        Assert.Equal($"The file exceeds the allowed limits: more than {ExamLimits.MaxQuestions} questions.", error.UserMessage.English);
     }
 
     [Fact]
@@ -118,7 +133,7 @@ public class ExamJsonTests
     {
         var error = Assert.Throws<ExamJsonException>(() => ExamJson.Deserialize("""{ "schemaVersion": 1, "language": 9 }"""));
 
-        Assert.Equal("الملف ليس ملف امتحان صالحًا.", error.Message);
+        Assert.Equal("الملف ليس ملف امتحان صالحًا.", error.UserMessage.Arabic);
     }
 
     [Fact]
@@ -126,7 +141,7 @@ public class ExamJsonTests
     {
         var error = Assert.Throws<ExamJsonException>(() => ExamJson.Deserialize("""{ "schemaVersion": 1, "language": "french" }"""));
 
-        Assert.Contains("JSON", error.Message);
+        Assert.Contains("صيغة JSON غير صالحة", error.UserMessage.Arabic);
     }
 
     [Fact]
