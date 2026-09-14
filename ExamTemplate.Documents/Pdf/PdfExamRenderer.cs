@@ -36,11 +36,12 @@ internal sealed class PdfExamRenderer
 
     private IDocument CreateDocument(ExamPaper paper, PaperKind kind)
     {
-        var title = kind == PaperKind.AnswerKey ? "مفتاح الإجابة" : "نسخة الطالب";
+        var wording = PaperWording.For(paper.Language);
+        var title = kind == PaperKind.AnswerKey ? wording.AnswerKey : wording.StudentCopy;
         return Document.Create(container => new ExamPdfLayout(paper, kind, _logo).Compose(container))
             .WithMetadata(new DocumentMetadata
             {
-                Title = $"{paper.Header.CourseName} – {paper.Header.ExamTitle} – النموذج {paper.VersionLetter} – {title}",
+                Title = $"{paper.Header.CourseName} – {paper.Header.ExamTitle} – {wording.VersionName(paper.VersionLetter)} – {title}",
                 Author = paper.Header.UniversityName,
                 Subject = paper.Header.ExamTitle,
             });

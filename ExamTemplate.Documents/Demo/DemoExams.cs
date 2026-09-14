@@ -68,6 +68,73 @@ public static class DemoExams
         ],
     };
 
+    /// <summary>
+    /// <see cref="ComputerLogicDesign"/> in English, with the same ids, seed and versions. One note keeps an Arabic term,
+    /// so English papers show an Arabic phrase inside English text.
+    /// </summary>
+    public static ExamDefinition ComputerLogicDesignEnglish()
+    {
+        var header = ExamDefaults.English.Header("2026/2027");
+        header.CourseName = "Computer Logic Design";
+        header.CourseCode = "1290";
+        header.Semester = "First Semester 1261";
+
+        return new ExamDefinition
+        {
+            Language = ExamLanguage.English,
+            Header = header,
+            Instructions = [.. ExamDefaults.English.Instructions],
+            VersionCount = 2,
+            ShuffleSeed = 12345,
+            Sections =
+            [
+                new ExamSection
+                {
+                    Id = Id(1),
+                    Title = "Part One: Objective Questions",
+                    Instruction = "Choose the best answer for each question.",
+                    Questions =
+                    [
+                        Choice(1, 1, 10, "Which of the following is a combinational logic circuit?", correct: 2,
+                            ["Register", "Counter", "Full adder", "Flip-flop"], note: "Choose one answer only."),
+                        Choice(1, 2, 10, "In an SR flip-flop, what does the input S usually stand for?", correct: 0,
+                            ["Set", "Reset", "Select", "Shift", "None of the above"], keepOrder: true),
+                        TrueFalse(1, 3, 5, "A JK flip-flop can be used to build counters.", answer: true),
+                        TrueFalse(1, 4, 5, "RAM keeps its contents after the power is switched off.", answer: false),
+                    ],
+                },
+                new ExamSection
+                {
+                    Id = Id(2),
+                    Title = "Part Two: Problems and Explanations",
+                    Instruction = "Answer clearly and show your working where needed.",
+                    Questions =
+                    [
+                        Essay(2, 1, 15, "Explain the difference between combinational and sequential circuits, giving an example of each.", lines: 5,
+                            "The output of a combinational circuit depends only on its current inputs; a sequential circuit also depends on its previous state. Example: a full adder versus a register.",
+                            note: "A sequential circuit (دائرة تتابعية – مثل المسجل) has memory."),
+                        Essay(2, 2, 20, "Design a circuit for the given logic function, then simplify the function and explain each step.", lines: 8,
+                            "First simplify the function with a Karnaugh map, then draw the circuit from the simplified expression, showing the gates and connections.",
+                            note: "You may use a Karnaugh map."),
+                    ],
+                },
+                new ExamSection
+                {
+                    Id = Id(3),
+                    Title = "Part Three: Concept Review",
+                    Instruction = "Short questions on the core concepts.",
+                    Questions =
+                    [
+                        Choice(3, 1, 15, "Which memory is usually used to store fixed content that can be read?", correct: 1,
+                            ["RAM", "ROM", "Register", "Cache"]),
+                        Essay(3, 2, 20, "List the main properties of shift registers, then describe one of their practical uses.", lines: 6,
+                            "Shift registers move data one bit at a time to the left or right; one use is converting between parallel and serial transmission."),
+                    ],
+                },
+            ],
+        };
+    }
+
     /// <summary>Rendering stress cases: very long text, eight long options, 20 answer lines, mixed scripts and markdown-like characters.</summary>
     public static ExamDefinition EdgeCases() => new()
     {

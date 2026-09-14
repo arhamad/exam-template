@@ -18,7 +18,11 @@ internal static class QuestPdfSetup
 
         // Only the bundled fonts, so PDFs look the same on developer machines and servers.
         Settings.UseEnvironmentFonts = false;
-        foreach (var font in new[] { ExamAssets.NotoNaskhArabicRegular, ExamAssets.NotoNaskhArabicBold, ExamAssets.DejaVuSans })
+        foreach (var font in new[]
+                 {
+                     ExamAssets.NotoNaskhArabicRegular, ExamAssets.NotoNaskhArabicBold, ExamAssets.NotoSerifRegular, ExamAssets.NotoSerifBold,
+                     ExamAssets.DejaVuSans,
+                 })
             FontManager.RegisterFont(new MemoryStream(ExamAssets.Read(font)));
 
         return true;

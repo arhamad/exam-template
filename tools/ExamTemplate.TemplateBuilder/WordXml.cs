@@ -9,7 +9,7 @@ internal enum Align
     Start,
     Center,
 
-    /// <summary>The visual left edge of a right-to-left paragraph.</summary>
+    /// <summary>The end edge: the visual left of an Arabic paragraph, the right of an English one.</summary>
     End,
 }
 
@@ -70,7 +70,10 @@ internal sealed record CellOptions(int GridSpan = 1, string? Fill = null, string
     public static readonly CellOptions Middle = new(VerticalAlign: "center");
 }
 
-/// <summary>Small helpers that emit WordprocessingML snippets. Formatting lives in named styles, not on runs.</summary>
+/// <summary>
+/// Small helpers that emit WordprocessingML snippets. Formatting lives in named styles, not on runs.
+/// Helpers whose output depends on the direction take <c>rightToLeft</c>; <see cref="TemplatePart"/> binds it to a language.
+/// </summary>
 internal static class WordXml
 {
     public const string WordNamespace = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
@@ -88,20 +91,19 @@ internal static class WordXml
     public static string P(string style, params string[] content) =>
         $"<w:p><w:pPr><w:pStyle w:val=\"{style}\"/></w:pPr>{string.Concat(content)}</w:p>";
 
-    /// <summary>A right-to-left text run.</summary>
-    public static string R(string text) => Run(text, characterStyle: null);
+    /// <summary>A text run. Right-to-left runs carry w:rtl, so Word formats them with the complex-script properties.</summary>
+    public static string Run(string text, string? characterStyle, bool rightToLeft)
+    {
+        var properties = (characterStyle is null ? "" : $"<w:rStyle w:val=\"{characterStyle}\"/>") + (rightToLeft ? "<w:rtl/>" : "");
+        var runProperties = properties.Length > 0 ? $"<w:rPr>{properties}</w:rPr>" : "";
+        return $"<w:r>{runProperties}<w:t xml:space=\"preserve\">{SecurityElement.Escape(text)}</w:t></w:r>";
+    }
 
-    /// <summary>A right-to-left text run with a character style.</summary>
-    public static string R(string text, string characterStyle) => Run(text, characterStyle);
+    public static string Field(string instruction, string cachedResult, bool rightToLeft) =>
+        $"<w:fldSimple w:instr=\" {instruction} \"><w:r>{(rightToLeft ? "<w:rPr><w:rtl/></w:rPr>" : "")}<w:t>{cachedResult}</w:t></w:r></w:fldSimple>";
 
-    /// <summary>A Templify marker (<c>{{#if}}</c>, <c>{{#foreach}}</c>, …) alone in its own paragraph, as Templify requires.</summary>
-    public static string Control(string marker) => P("TemplateControl", R(marker));
-
-    public static string Field(string instruction, string cachedResult) =>
-        $"<w:fldSimple w:instr=\" {instruction} \"><w:r><w:rPr><w:rtl/></w:rPr><w:t>{cachedResult}</w:t></w:r></w:fldSimple>";
-
-    /// <summary>A full-width right-to-left table with a fixed grid.</summary>
-    public static string Table(IReadOnlyList<int> grid, TableOptions options, params string[] rows)
+    /// <summary>A full-width table with a fixed grid. Right-to-left tables lay their columns out from the right.</summary>
+    public static string Table(IReadOnlyList<int> grid, TableOptions options, bool rightToLeft, params string[] rows)
     {
         var width = grid.Sum();
         if (width != DesignTokens.TextWidthTwips)
@@ -112,7 +114,7 @@ internal static class WordXml
             + $"<w:bottom w:w=\"{options.MarginBottomTwips}\" w:type=\"dxa\"/><w:right w:w=\"{DesignTokens.CellMarginTwips}\" w:type=\"dxa\"/>"
             + "</w:tblCellMar>";
 
-        return "<w:tbl><w:tblPr><w:bidiVisual/>"
+        return "<w:tbl><w:tblPr>" + (rightToLeft ? "<w:bidiVisual/>" : "")
             + $"<w:tblW w:w=\"{width}\" w:type=\"dxa\"/><w:tblInd w:w=\"0\" w:type=\"dxa\"/>"
             + options.Borders + "<w:tblLayout w:type=\"fixed\"/>" + cellMargins + "</w:tblPr>"
             + $"<w:tblGrid>{string.Concat(grid.Select(column => $"<w:gridCol w:w=\"{column}\"/>"))}</w:tblGrid>"
@@ -126,10 +128,6 @@ internal static class WordXml
         var rowProperties = properties.Length > 0 ? $"<w:trPr>{properties}</w:trPr>" : "";
         return $"<w:tr>{rowProperties}{string.Concat(cells)}</w:tr>";
     }
-
-    /// <summary>A row holding a Templify row-loop marker in its first cell; Templify removes the whole row.</summary>
-    public static string ControlRow(IReadOnlyList<int> grid, string marker) =>
-        Row(RowOptions.Plain, grid.Select((width, index) => Cell(width, CellOptions.Plain, index == 0 ? Control(marker) : P("TemplateControl"))).ToArray());
 
     public static string Cell(int width, CellOptions options, params string[] content)
     {
@@ -168,11 +166,5 @@ internal static class WordXml
             + $"<pic:spPr><a:xfrm><a:off x=\"0\" y=\"0\"/><a:ext cx=\"{width}\" cy=\"{height}\"/></a:xfrm>"
             + "<a:prstGeom prst=\"rect\"><a:avLst/></a:prstGeom></pic:spPr>"
             + "</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>";
-    }
-
-    private static string Run(string text, string? characterStyle)
-    {
-        var style = characterStyle is null ? "" : $"<w:rStyle w:val=\"{characterStyle}\"/>";
-        return $"<w:r><w:rPr>{style}<w:rtl/></w:rPr><w:t xml:space=\"preserve\">{SecurityElement.Escape(text)}</w:t></w:r>";
     }
 }

@@ -15,6 +15,7 @@ internal static class WordTemplateData
     public static Dictionary<string, object> Create(ExamPaper paper, PaperKind kind)
     {
         var isAnswerKey = kind == PaperKind.AnswerKey;
+        var wording = PaperWording.For(paper.Language);
         var header = paper.Header;
         var semesterLine = header.Semester.Length > 0 ? $"{header.Semester} – {header.AcademicYear}" : header.AcademicYear;
 
@@ -32,7 +33,7 @@ internal static class WordTemplateData
             ["ExamDateText"] = header.ExamDateText,
             ["HasExamDate"] = header.ExamDateText.Length > 0,
             ["VersionLetter"] = paper.VersionLetter,
-            ["FooterVersionText"] = $"النموذج {paper.VersionLetter}",
+            ["FooterVersionText"] = wording.VersionName(paper.VersionLetter),
             ["QuestionCountText"] = paper.QuestionCountText,
             ["TotalMarksText"] = paper.TotalMarksText,
             ["IsAnswerKey"] = isAnswerKey,
@@ -41,8 +42,8 @@ internal static class WordTemplateData
             ["HasInstructions"] = paper.Instructions.Count > 0,
             ["Instructions"] = paper.Instructions.Select((instruction, index) => new InstructionItem(Number(index + 1), Text(instruction))).ToList(),
             ["Sections"] = paper.Sections.Select(section => Section(section, isAnswerKey)).ToList(),
-            ["EndText"] = isAnswerKey ? "انتهى مفتاح الإجابة" : "انتهت الأسئلة",
-            ["EndNote"] = isAnswerKey ? "" : " – مع تمنياتنا لكم بالتوفيق",
+            ["EndText"] = isAnswerKey ? wording.EndOfAnswerKey : wording.EndOfQuestions,
+            ["EndNote"] = isAnswerKey ? "" : wording.GoodLuck,
         };
     }
 

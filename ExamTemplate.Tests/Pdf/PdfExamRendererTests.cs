@@ -19,6 +19,8 @@ public class PdfExamRendererTests
         { nameof(DemoExams.ComputerLogicDesign), 1, PaperKind.AnswerKey },
         { nameof(DemoExams.EdgeCases), 0, PaperKind.Student },
         { nameof(DemoExams.EdgeCases), 1, PaperKind.AnswerKey },
+        { nameof(DemoExams.ComputerLogicDesignEnglish), 0, PaperKind.Student },
+        { nameof(DemoExams.ComputerLogicDesignEnglish), 1, PaperKind.AnswerKey },
     };
 
     [Theory]
@@ -30,10 +32,12 @@ public class PdfExamRendererTests
         Assert.Equal("%PDF"u8.ToArray(), pdf[..4]);
     }
 
-    [Fact]
-    public void Demo_exam_prints_on_a_few_pages()
+    [Theory]
+    [InlineData(nameof(DemoExams.ComputerLogicDesign))]
+    [InlineData(nameof(DemoExams.ComputerLogicDesignEnglish))]
+    public void Demo_exam_prints_on_a_few_pages(string exam)
     {
-        var pages = Renderer.RenderPageImages(Paper(nameof(DemoExams.ComputerLogicDesign), 0), PaperKind.Student, dpi: 24);
+        var pages = Renderer.RenderPageImages(Paper(exam, 0), PaperKind.Student, dpi: 24);
 
         Assert.InRange(pages.Count, 2, 4);
         Assert.All(pages, page => Assert.Equal(new byte[] { 0x89, 0x50, 0x4E, 0x47 }, page[..4]));
@@ -53,6 +57,7 @@ public class PdfExamRendererTests
     private static ExamPaper Paper(string exam, int version) => ExamPaperBuilder.Build(exam switch
     {
         nameof(DemoExams.ComputerLogicDesign) => DemoExams.ComputerLogicDesign(),
+        nameof(DemoExams.ComputerLogicDesignEnglish) => DemoExams.ComputerLogicDesignEnglish(),
         nameof(DemoExams.EdgeCases) => DemoExams.EdgeCases(),
         _ => throw new ArgumentOutOfRangeException(nameof(exam)),
     }, version);

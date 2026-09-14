@@ -1,17 +1,19 @@
 using System.Globalization;
 using ExamTemplate.Documents.Assets;
+using ExamTemplate.Documents.Model;
 using ExamTemplate.Documents.Papers;
 using ExamTemplate.Documents.Services;
 using TriasDev.Templify.Core;
 
 namespace ExamTemplate.Documents.Word;
 
-/// <summary>Fills the embedded Word template with a paper. Thread-safe; one instance can serve all requests.</summary>
+/// <summary>Fills the embedded Word template of the paper's language. Thread-safe; one instance can serve all requests.</summary>
 internal sealed class WordExamRenderer
 {
     private const string FailureMessage = "تعذّر إنشاء ملف Word. حاول مرة أخرى، وإن تكررت المشكلة فتواصل مع الدعم الفني.";
 
-    private readonly byte[] _template = ExamAssets.Read(ExamAssets.WordTemplate);
+    private readonly Dictionary<ExamLanguage, byte[]> _templates = Enum.GetValues<ExamLanguage>()
+        .ToDictionary(language => language, language => ExamAssets.Read(ExamAssets.WordTemplate(language)));
 
     private readonly DocumentTemplateProcessor _processor = new(new PlaceholderReplacementOptions
     {
@@ -27,7 +29,7 @@ internal sealed class WordExamRenderer
     /// <exception cref="ExamRenderException">The template could not be filled.</exception>
     public byte[] Render(ExamPaper paper, PaperKind kind)
     {
-        using var template = new MemoryStream(_template, writable: false);
+        using var template = new MemoryStream(_templates[paper.Language], writable: false);
         using var output = new MemoryStream();
 
         try

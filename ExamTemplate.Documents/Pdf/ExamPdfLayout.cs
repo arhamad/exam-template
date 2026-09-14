@@ -9,7 +9,8 @@ using static ExamTemplate.Documents.Design.DesignTokens;
 namespace ExamTemplate.Documents.Pdf;
 
 /// <summary>
-/// The PDF counterpart of ExamTemplate.docx. Uses the same design tokens (sizes, colors, grids) so both formats print alike.
+/// The PDF counterpart of the Word templates, with the same design tokens (sizes, colors, grids) and wording so both formats
+/// print alike. Arabic papers are laid out right to left; English papers mirror them left to right.
 /// Each question is one block that moves to the next page rather than splitting; a section bar travels with its first question.
 /// Grids that span the full text width use their twip widths as relative weights, so they always fit the page exactly.
 /// </summary>
@@ -17,6 +18,8 @@ internal sealed class ExamPdfLayout(ExamPaper paper, PaperKind kind, byte[] logo
 {
     private const float PointsPerCentimeter = 28.3465f;
     private const float BubbleDiameter = 9f;
+
+    private readonly PaperWording _wording = PaperWording.For(paper.Language);
 
     private bool IsAnswerKey => kind == PaperKind.AnswerKey;
 
@@ -26,8 +29,9 @@ internal sealed class ExamPdfLayout(ExamPaper paper, PaperKind kind, byte[] logo
         page.MarginTop(Points(MarginTopTwips));
         page.MarginBottom(Points(FooterDistanceTwips));
         page.MarginHorizontal(Points(MarginSideTwips));
-        page.ContentFromRightToLeft();
-        page.DefaultTextStyle(style => style.FontFamily(FontFamily, SymbolFontFamily).FontSize(11).FontColor(Hex(TextColor)));
+        if (_wording.IsRightToLeft)
+            page.ContentFromRightToLeft();
+        page.DefaultTextStyle(style => style.FontFamily(PdfFontFamilies(paper.Language)).FontSize(11).FontColor(Hex(TextColor)));
 
         page.Content().Column(column =>
         {
@@ -65,47 +69,47 @@ internal sealed class ExamPdfLayout(ExamPaper paper, PaperKind kind, byte[] logo
             row.RelativeItem(HeaderGrid[0]).Column(details =>
             {
                 details.Spacing(2);
-                LabeledLine(details.Item(), "المقرر: ", paper.Header.CourseName, HeaderInfoSize);
-                LabeledLine(details.Item(), "رقم المقرر: ", paper.Header.CourseCode, HeaderInfoSize);
-                LabeledLine(details.Item(), "مدة الامتحان: ", paper.Header.Duration, HeaderInfoSize);
-                LabeledLine(details.Item(), "عدد الأسئلة: ", paper.QuestionCountText, HeaderInfoSize);
-                LabeledLine(details.Item(), "العلامة الكلية: ", paper.TotalMarksText, HeaderInfoSize);
+                LabeledLine(details.Item(), _wording.Course, paper.Header.CourseName, HeaderInfoSize);
+                LabeledLine(details.Item(), _wording.CourseCode, paper.Header.CourseCode, HeaderInfoSize);
+                LabeledLine(details.Item(), _wording.Duration, paper.Header.Duration, HeaderInfoSize);
+                LabeledLine(details.Item(), _wording.QuestionCount, paper.QuestionCountText, HeaderInfoSize);
+                LabeledLine(details.Item(), _wording.TotalMarks, paper.TotalMarksText, HeaderInfoSize);
             });
 
             row.RelativeItem(HeaderGrid[1]).Column(center =>
             {
                 center.Item().AlignCenter().Width(LogoWidthCm * PointsPerCentimeter).Image(logo);
-                center.Item().PaddingTop(2).Text(PdfText.Isolate(paper.Header.UniversityName)).FontSize(UniversitySize).Bold().AlignCenter();
-                center.Item().PaddingTop(1).Text(PdfText.Isolate(paper.Header.ExamTitle)).FontSize(ExamTitleSize).Bold().AlignCenter();
-                center.Item().PaddingTop(1).Text(PdfText.Isolate(SemesterLine())).FontSize(SubtitleSize).FontColor(Hex(MutedColor)).AlignCenter();
+                center.Item().PaddingTop(2).Text(Isolate(paper.Header.UniversityName)).FontSize(UniversitySize).Bold().AlignCenter();
+                center.Item().PaddingTop(1).Text(Isolate(paper.Header.ExamTitle)).FontSize(ExamTitleSize).Bold().AlignCenter();
+                center.Item().PaddingTop(1).Text(Isolate(SemesterLine())).FontSize(SubtitleSize).FontColor(Hex(MutedColor)).AlignCenter();
             });
 
             row.RelativeItem(HeaderGrid[2]).Column(side =>
             {
                 side.Item().AlignCenter().Width(80).Border(MediumBorder / 8f).BorderColor(Hex(TextColor)).PaddingVertical(3).Column(box =>
                 {
-                    box.Item().Text("النموذج").FontSize(VersionLabelSize).FontColor(Hex(MutedColor)).AlignCenter();
+                    box.Item().Text(_wording.Version).FontSize(VersionLabelSize).FontColor(Hex(MutedColor)).AlignCenter();
                     box.Item().Text(paper.VersionLetter).FontSize(VersionLetterSize).Bold().AlignCenter();
                 });
 
                 if (paper.Header.ExamMode.Length > 0)
-                    LabeledLine(side.Item().PaddingTop(4).AlignCenter(), "نوع الامتحان: ", paper.Header.ExamMode, HeaderInfoSize);
+                    LabeledLine(side.Item().PaddingTop(4).AlignCenter(), _wording.ExamMode, paper.Header.ExamMode, HeaderInfoSize);
                 if (paper.Header.ExamDateText.Length > 0)
-                    LabeledLine(side.Item().PaddingTop(3).AlignCenter(), "التاريخ: ", paper.Header.ExamDateText, HeaderInfoSize);
+                    LabeledLine(side.Item().PaddingTop(3).AlignCenter(), _wording.Date, paper.Header.ExamDateText, HeaderInfoSize);
             });
         });
 
     private void KeyBanner(IContainer container) => container
         .Border(HeavyBorder / 8f).BorderColor(Hex(TextColor)).PaddingVertical(3)
-        .Text($"مفتاح الإجابة – النموذج {paper.VersionLetter} – للمصحّح فقط").FontSize(KeyBannerSize).Bold().AlignCenter();
+        .Text(_wording.AnswerKeyBanner(paper.VersionLetter)).FontSize(KeyBannerSize).Bold().AlignCenter();
 
     // Name, ID and group with drawn rules instead of underscore characters.
-    private static void StudentFields(IContainer container) => container.Height(Points(StudentRowHeightTwips)).Row(row =>
+    private void StudentFields(IContainer container) => container.Height(Points(StudentRowHeightTwips)).Row(row =>
     {
-        var grid = StudentRowGrid;
-        StudentField(row, grid[0], grid[1], "اسم الطالب:");
-        StudentField(row, grid[2], grid[3], "الرقم الجامعي:");
-        StudentField(row, grid[4], grid[5], "الشعبة:");
+        var grid = StudentRowGrid(paper.Language);
+        StudentField(row, grid[0], grid[1], _wording.StudentName);
+        StudentField(row, grid[2], grid[3], _wording.StudentId);
+        StudentField(row, grid[4], grid[5], _wording.StudentGroup);
     });
 
     private static void StudentField(RowDescriptor row, int labelTwips, int blankTwips, string label)
@@ -118,7 +122,7 @@ internal sealed class ExamPdfLayout(ExamPaper paper, PaperKind kind, byte[] logo
     // Answer key only: question numbers and answers, five pairs per row.
     private void AnswerSummary(IContainer container) => container.Column(column =>
     {
-        column.Item().PaddingBottom(2).Text("ملخص الإجابات").FontSize(SummaryTitleSize).Bold();
+        column.Item().PaddingBottom(2).Text(_wording.AnswerSummary).FontSize(SummaryTitleSize).Bold();
         column.Item().Table(table =>
         {
             table.ColumnsDefinition(columns =>
@@ -156,7 +160,7 @@ internal sealed class ExamPdfLayout(ExamPaper paper, PaperKind kind, byte[] logo
         .Column(column =>
         {
             column.Item().Background(Hex(FillColor)).PaddingHorizontal(4).PaddingVertical(2)
-                .Text("تعليمات الامتحان").FontSize(InstructionsTitleSize).Bold();
+                .Text(_wording.Instructions).FontSize(InstructionsTitleSize).Bold();
 
             for (var index = 0; index < paper.Instructions.Count; index++)
             {
@@ -165,7 +169,7 @@ internal sealed class ExamPdfLayout(ExamPaper paper, PaperKind kind, byte[] logo
                 column.Item().PaddingHorizontal(4).PaddingVertical(1).Row(row =>
                 {
                     row.ConstantItem(Points(InstructionsGrid[0])).Text($"{number}.").FontSize(InstructionSize).Bold().AlignCenter();
-                    row.RelativeItem().Text(PdfText.Isolate(instruction)).FontSize(InstructionSize);
+                    row.RelativeItem().Text(Isolate(instruction)).FontSize(InstructionSize);
                 });
             }
         });
@@ -192,7 +196,7 @@ internal sealed class ExamPdfLayout(ExamPaper paper, PaperKind kind, byte[] logo
         }
     }
 
-    private static void SectionBar(IContainer container, PaperSection section) => container
+    private void SectionBar(IContainer container, PaperSection section) => container
         .BorderTop(MediumBorder / 8f).BorderBottom(MediumBorder / 8f).BorderColor(Hex(TextColor))
         .Background(Hex(FillColor)).PaddingVertical(2)
         .Row(row =>
@@ -200,40 +204,43 @@ internal sealed class ExamPdfLayout(ExamPaper paper, PaperKind kind, byte[] logo
             row.RelativeItem().PaddingHorizontal(3).Column(text =>
             {
                 if (section.Title.Length > 0)
-                    text.Item().Text(PdfText.Isolate(section.Title)).FontSize(SectionTitleSize).Bold();
+                    text.Item().Text(Isolate(section.Title)).FontSize(SectionTitleSize).Bold();
                 if (section.Instruction.Length > 0)
-                    text.Item().PaddingTop(1).Text(PdfText.Isolate(section.Instruction)).FontSize(SectionInstructionSize).FontColor(Hex(MutedColor));
+                    text.Item().PaddingTop(1).Text(Isolate(section.Instruction)).FontSize(SectionInstructionSize).FontColor(Hex(MutedColor));
             });
-            row.ConstantItem(Points(SectionBarGrid[1])).AlignMiddle().Text(PdfText.Isolate(section.MarksText)).FontSize(SectionMarksSize).Bold().AlignCenter();
+            row.ConstantItem(Points(SectionBarGrid[1])).AlignMiddle().Text(Isolate(section.MarksText)).FontSize(SectionMarksSize).Bold().AlignCenter();
         });
 
     // Number | text and note | (true/false bubbles) | marks, followed by options, answer lines or the model answer.
     private void Question(IContainer container, PaperQuestion question) => container.Column(column =>
     {
+        var questionGrid = QuestionGrid(paper.Language);
+        var trueFalseGrid = TrueFalseQuestionGrid(paper.Language);
+
         column.Item().PaddingTop(1).Row(row =>
         {
-            row.ConstantItem(Points(QuestionGrid[0])).Text($"{question.Number}.").FontSize(QuestionNumberSize).Bold();
+            row.ConstantItem(Points(questionGrid[0])).Text($"{question.Number}.").FontSize(QuestionNumberSize).Bold();
 
             row.RelativeItem().Column(text =>
             {
-                text.Item().Text(PdfText.Isolate(question.Text)).FontSize(QuestionTextSize);
+                text.Item().Text(Isolate(question.Text)).FontSize(QuestionTextSize);
                 if (question.Note.Length > 0)
                 {
                     text.Item().PaddingTop(SpaceAfterQuestionText).Text(note =>
                     {
-                        note.Span("ملاحظة: ").FontSize(NoteSize).Bold().FontColor(Hex(MutedColor));
-                        note.Span(PdfText.Isolate(question.Note)).FontSize(NoteSize).FontColor(Hex(MutedColor));
+                        note.Span(_wording.Note).FontSize(NoteSize).Bold().FontColor(Hex(MutedColor));
+                        note.Span(Isolate(question.Note)).FontSize(NoteSize).FontColor(Hex(MutedColor));
                     });
                 }
             });
 
             if (question.Type == QuestionType.TrueFalse)
             {
-                row.ConstantItem(Points(TrueFalseQuestionGrid[2])).Element(cell => TrueFalseChoice(cell, "صح", IsAnswerKey && question.TrueFalseAnswer == true));
-                row.ConstantItem(Points(TrueFalseQuestionGrid[3])).Element(cell => TrueFalseChoice(cell, "خطأ", IsAnswerKey && question.TrueFalseAnswer == false));
+                row.ConstantItem(Points(trueFalseGrid[2])).Element(cell => TrueFalseChoice(cell, _wording.TrueFalse(true), IsAnswerKey && question.TrueFalseAnswer == true));
+                row.ConstantItem(Points(trueFalseGrid[3])).Element(cell => TrueFalseChoice(cell, _wording.TrueFalse(false), IsAnswerKey && question.TrueFalseAnswer == false));
             }
 
-            row.ConstantItem(Points(QuestionGrid[2])).Text(PdfText.Isolate($"({question.MarksText})")).FontSize(MarksSize).Bold().AlignCenter();
+            row.ConstantItem(Points(questionGrid[2])).Text(Isolate($"({question.MarksText})")).FontSize(MarksSize).Bold().AlignCenter();
         });
 
         switch (question.Type)
@@ -270,7 +277,7 @@ internal sealed class ExamPdfLayout(ExamPaper paper, PaperKind kind, byte[] logo
         row.AutoItem().PaddingHorizontal(3).Text(label).FontSize(TrueFalseSize);
     });
 
-    // Short options in two columns (أ ب / ج د), otherwise one row per option.
+    // Short options in two columns (A B / C D), otherwise one row per option.
     private void Options(IContainer container, PaperQuestion question) => container.Column(column =>
     {
         if (question.OptionLayout == OptionLayout.TwoColumns)
@@ -306,44 +313,44 @@ internal sealed class ExamPdfLayout(ExamPaper paper, PaperKind kind, byte[] logo
     {
         row.ConstantItem(Points(OptionsOneColumnGrid[1])).PaddingTop(4).AlignCenter().Element(bubble => Bubble(bubble, IsAnswerKey && option.IsCorrect));
         row.ConstantItem(Points(OptionsOneColumnGrid[2])).Text($"{option.Label})").FontSize(OptionSize).Bold();
-        row.RelativeItem(textWeight).PaddingBottom(1).Text(PdfText.Isolate(option.Text)).FontSize(OptionSize);
+        row.RelativeItem(textWeight).PaddingBottom(1).Text(Isolate(option.Text)).FontSize(OptionSize);
     }
 
-    private static void ModelAnswer(IContainer container, string answer) => container
+    private void ModelAnswer(IContainer container, string answer) => container
         .Border(HairlineBorder / 8f).BorderColor(Hex(RuleColor)).Background(Hex(FillColor)).Padding(4)
         .Column(column =>
         {
-            column.Item().Text("الإجابة النموذجية:").FontSize(ModelAnswerSize).Bold();
-            column.Item().PaddingTop(1).Text(PdfText.Isolate(answer)).FontSize(ModelAnswerSize);
+            column.Item().Text(_wording.ModelAnswer).FontSize(ModelAnswerSize).Bold();
+            column.Item().PaddingTop(1).Text(Isolate(answer)).FontSize(ModelAnswerSize);
         });
 
     private void EndLine(IContainer container) => container.AlignCenter().Text(text =>
     {
-        text.Span(IsAnswerKey ? "انتهى مفتاح الإجابة" : "انتهت الأسئلة").FontSize(EndMarkerSize).Bold();
+        text.Span(IsAnswerKey ? _wording.EndOfAnswerKey : _wording.EndOfQuestions).FontSize(EndMarkerSize).Bold();
         if (!IsAnswerKey)
-            text.Span(" – مع تمنياتنا لكم بالتوفيق").FontSize(EndNoteSize).FontColor(Hex(MutedColor));
+            text.Span(_wording.GoodLuck).FontSize(EndNoteSize).FontColor(Hex(MutedColor));
     });
 
     private void Footer(IContainer container) => container
         .BorderTop(HairlineBorder / 8f).BorderColor(Hex(RuleColor)).PaddingTop(2)
         .Row(row =>
         {
-            row.RelativeItem().Text(PdfText.Isolate($"{paper.Header.CourseCode} – {paper.Header.CourseName}")).FontSize(FooterSize).FontColor(Hex(MutedColor));
+            row.RelativeItem().Text(Isolate($"{paper.Header.CourseCode} – {paper.Header.CourseName}")).FontSize(FooterSize).FontColor(Hex(MutedColor));
             row.RelativeItem().Text(text =>
             {
                 text.AlignCenter();
-                text.Span("صفحة ").FontSize(FooterSize).FontColor(Hex(MutedColor));
+                text.Span(_wording.Page).FontSize(FooterSize).FontColor(Hex(MutedColor));
                 text.CurrentPageNumber().FontSize(FooterSize).FontColor(Hex(MutedColor));
-                text.Span(" من ").FontSize(FooterSize).FontColor(Hex(MutedColor));
+                text.Span(_wording.PageOf).FontSize(FooterSize).FontColor(Hex(MutedColor));
                 text.TotalPages().FontSize(FooterSize).FontColor(Hex(MutedColor));
             });
-            row.RelativeItem().Text(PdfText.Isolate($"النموذج {paper.VersionLetter} – {paper.Header.AcademicYear}")).FontSize(FooterSize).FontColor(Hex(MutedColor)).AlignEnd();
+            row.RelativeItem().Text(Isolate($"{_wording.VersionName(paper.VersionLetter)} – {paper.Header.AcademicYear}")).FontSize(FooterSize).FontColor(Hex(MutedColor)).AlignEnd();
         });
 
-    private static void LabeledLine(IContainer container, string label, string value, float size) => container.Text(text =>
+    private void LabeledLine(IContainer container, string label, string value, float size) => container.Text(text =>
     {
         text.Span(label).FontSize(size).Bold();
-        text.Span(PdfText.Isolate(value)).FontSize(size);
+        text.Span(Isolate(value)).FontSize(size);
     });
 
     // Answer bubbles are drawn, so they don't depend on a font having ○ and ●.
@@ -354,6 +361,8 @@ internal sealed class ExamPdfLayout(ExamPaper paper, PaperKind kind, byte[] logo
         if (filled)
             circle.Background(Hex(TextColor));
     }
+
+    private string Isolate(string text) => PdfText.Isolate(text, _wording.IsRightToLeft);
 
     private string SemesterLine() => paper.Header.Semester.Length > 0
         ? $"{paper.Header.Semester} – {paper.Header.AcademicYear}"

@@ -1,15 +1,18 @@
 using System.Text;
+using ExamTemplate.Documents.Model;
+using ExamTemplate.Documents.Papers;
 using static ExamTemplate.Documents.Design.DesignTokens;
 
 namespace ExamTemplate.TemplateBuilder;
 
 /// <summary>
-/// styles.xml. Every style sets all four font slots and both the Latin and complex-script size/bold,
-/// because Word formats right-to-left runs with the complex-script properties only.
+/// styles.xml. Every style sets all four font slots and both the Latin and complex-script size/bold, because Word formats
+/// right-to-left runs, and Arabic words anywhere, with the complex-script properties only.
+/// Arabic paragraph styles are right to left (w:bidi); English ones are plain left-to-right paragraphs.
 /// </summary>
-internal static class TemplateStyles
+internal sealed class TemplateStyles(ExamLanguage language)
 {
-    private const string Language = "<w:lang w:val=\"en-US\" w:eastAsia=\"en-US\" w:bidi=\"ar-SA\"/>";
+    private const string LanguageTags = "<w:lang w:val=\"en-US\" w:eastAsia=\"en-US\" w:bidi=\"ar-SA\"/>";
     private const int VersionBoxIndentTwips = 1020;
 
     private static readonly string VersionBox = string.Concat(new[] { "top", "left", "bottom", "right" }
@@ -71,19 +74,22 @@ internal static class TemplateStyles
         new("ExamFooterTail", 1, ExactLineTwips: 20),
     ];
 
-    public static string Xml()
+    private readonly bool _rightToLeft = PaperWording.For(language).IsRightToLeft;
+    private readonly FontSlots _textFonts = new(TextFontFamily(language), ArabicFontFamily);
+
+    public string Xml()
     {
         var xml = new StringBuilder($"<w:styles xmlns:w=\"{WordXml.WordNamespace}\">");
 
         xml.Append("<w:docDefaults><w:rPrDefault><w:rPr>")
-            .Append(Fonts(FontFamily)).Append(Size(11)).Append(Language)
+            .Append(_textFonts.Xml()).Append(Size(11)).Append(LanguageTags)
             .Append("</w:rPr></w:rPrDefault>")
             .Append("<w:pPrDefault><w:pPr><w:spacing w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr></w:pPrDefault>")
             .Append("</w:docDefaults>");
 
         xml.Append("<w:style w:type=\"paragraph\" w:default=\"1\" w:styleId=\"Normal\"><w:name w:val=\"Normal\"/><w:qFormat/>")
-            .Append("<w:pPr><w:bidi/><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr>")
-            .Append("<w:rPr>").Append(RunProperties(FontFamily, 11, bold: false, TextColor)).Append(Language).Append("</w:rPr>")
+            .Append("<w:pPr>").Append(_rightToLeft ? "<w:bidi/>" : "").Append("<w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr>")
+            .Append("<w:rPr>").Append(RunProperties(_textFonts, 11, bold: false, TextColor)).Append(LanguageTags).Append("</w:rPr>")
             .Append("</w:style>");
 
         xml.Append("<w:style w:type=\"character\" w:default=\"1\" w:styleId=\"DefaultParagraphFont\"><w:name w:val=\"Default Paragraph Font\"/>")
@@ -98,23 +104,20 @@ internal static class TemplateStyles
             .Append("<w:uiPriority w:val=\"99\"/><w:semiHidden/><w:unhideWhenUsed/></w:style>");
 
         foreach (var style in ParagraphStyles)
-            xml.Append(style.Xml());
+            xml.Append(style.Xml(_rightToLeft, _textFonts));
 
         xml.Append(CharacterStyle("ExamBoldChar", "<w:b/><w:bCs/>"));
-        xml.Append(CharacterStyle("ExamBubbleChar", Fonts(WordBubbleFontFamily) + Size(BubbleSize)));
+        xml.Append(CharacterStyle("ExamBubbleChar", new FontSlots(WordBubbleFontFamily, WordBubbleFontFamily).Xml() + Size(BubbleSize)));
         xml.Append(CharacterStyle("ExamEndNoteChar", $"<w:b w:val=\"0\"/><w:bCs w:val=\"0\"/><w:color w:val=\"{MutedColor}\"/>" + Size(EndNoteSize)));
 
         return xml.Append("</w:styles>").ToString();
     }
 
     // No <w:rtl/> here: the schema doesn't allow it in style run properties, so every run sets it itself.
-    public static string RunProperties(string font, float size, bool bold, string color) =>
-        Fonts(font) + (bold ? "<w:b/><w:bCs/>" : "") + $"<w:color w:val=\"{color}\"/>" + Size(size);
+    public static string RunProperties(FontSlots fonts, float size, bool bold, string color) =>
+        fonts.Xml() + (bold ? "<w:b/><w:bCs/>" : "") + $"<w:color w:val=\"{color}\"/>" + Size(size);
 
     public static int Twips(float points) => (int)Math.Round(points * 20);
-
-    private static string Fonts(string font) =>
-        $"<w:rFonts w:ascii=\"{font}\" w:hAnsi=\"{font}\" w:eastAsia=\"{font}\" w:cs=\"{font}\"/>";
 
     private static string Size(float points)
     {
@@ -127,6 +130,13 @@ internal static class TemplateStyles
         + $"<w:basedOn w:val=\"DefaultParagraphFont\"/><w:rPr>{runProperties}</w:rPr></w:style>";
 }
 
+/// <summary>A run's font slots: one font for Latin, high-ANSI and East Asian text, one for complex scripts such as Arabic.</summary>
+internal sealed record FontSlots(string Text, string ComplexScript)
+{
+    public string Xml() => $"<w:rFonts w:ascii=\"{Text}\" w:hAnsi=\"{Text}\" w:eastAsia=\"{Text}\" w:cs=\"{ComplexScript}\"/>";
+}
+
+/// <param name="Font">A font for all four slots instead of the paper's text fonts.</param>
 internal sealed record ParagraphStyle(
     string Id,
     float Size,
@@ -137,18 +147,19 @@ internal sealed record ParagraphStyle(
     float After = 0,
     bool KeepNext = false,
     int ExactLineTwips = 0,
-    string Font = FontFamily,
+    string? Font = null,
     string? Border = null,
     int IndentTwips = 0)
 {
-    public string Xml()
+    public string Xml(bool rightToLeft, FontSlots textFonts)
     {
         var paragraph = new StringBuilder();
         if (KeepNext)
             paragraph.Append("<w:keepNext/>");
         if (Border is not null)
             paragraph.Append($"<w:pBdr>{Border}</w:pBdr>");
-        paragraph.Append("<w:bidi/>");
+        if (rightToLeft)
+            paragraph.Append("<w:bidi/>");
 
         var line = ExactLineTwips > 0 ? $"w:line=\"{ExactLineTwips}\" w:lineRule=\"exact\"" : "w:line=\"240\" w:lineRule=\"auto\"";
         paragraph.Append($"<w:spacing w:before=\"{TemplateStyles.Twips(Before)}\" w:after=\"{TemplateStyles.Twips(After)}\" {line}/>");
@@ -157,11 +168,13 @@ internal sealed record ParagraphStyle(
         if (IndentTwips > 0)
             paragraph.Append($"<w:ind w:left=\"{IndentTwips}\" w:right=\"{IndentTwips}\"/>");
 
-        // Word reads jc left/right in right-to-left paragraphs as start/end: start is the default, "right" is the end (visual left).
+        // Start needs no jc in either direction, and "right" is the end in both: Word reads left and right in
+        // right-to-left paragraphs as start and end.
         if (Align != Align.Start)
             paragraph.Append($"<w:jc w:val=\"{(Align == Align.Center ? "center" : "right")}\"/>");
 
+        var fonts = Font is null ? textFonts : new FontSlots(Font, Font);
         return $"<w:style w:type=\"paragraph\" w:customStyle=\"1\" w:styleId=\"{Id}\"><w:name w:val=\"{Id}\"/><w:basedOn w:val=\"Normal\"/><w:qFormat/>"
-            + $"<w:pPr>{paragraph}</w:pPr><w:rPr>{TemplateStyles.RunProperties(Font, Size, Bold, Color)}</w:rPr></w:style>";
+            + $"<w:pPr>{paragraph}</w:pPr><w:rPr>{TemplateStyles.RunProperties(fonts, Size, Bold, Color)}</w:rPr></w:style>";
     }
 }

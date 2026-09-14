@@ -27,6 +27,24 @@ public class WordTemplateDataTests
     }
 
     [Fact]
+    public void English_papers_get_english_version_count_and_end_texts()
+    {
+        var paper = Paper(DemoExams.ComputerLogicDesignEnglish(), 1);
+
+        var student = WordTemplateData.Create(paper, PaperKind.Student);
+        var key = WordTemplateData.Create(paper, PaperKind.AnswerKey);
+
+        Assert.Equal("B", student["VersionLetter"]);
+        Assert.Equal("Version B", student["FooterVersionText"]);
+        Assert.Equal("8 questions", student["QuestionCountText"]);
+        Assert.Equal("100 marks", student["TotalMarksText"]);
+        Assert.Equal("End of questions", student["EndText"]);
+        Assert.Equal(" – Good luck", student["EndNote"]);
+        Assert.Equal("End of answer key", key["EndText"]);
+        Assert.Equal("", key["EndNote"]);
+    }
+
+    [Fact]
     public void Semester_line_falls_back_to_the_academic_year_and_the_date_is_shown()
     {
         var data = WordTemplateData.Create(Paper(DemoExams.EdgeCases(), 0), PaperKind.Student);

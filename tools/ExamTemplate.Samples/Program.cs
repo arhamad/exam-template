@@ -10,7 +10,12 @@ var formats = args.Length > 1 ? args[1] : "all";
 Directory.CreateDirectory(output);
 
 var service = new ExamDocumentService();
-(string Name, ExamDefinition Exam)[] exams = [("logic", DemoExams.ComputerLogicDesign()), ("edge", DemoExams.EdgeCases())];
+(string Name, ExamDefinition Exam)[] exams =
+[
+    ("logic", DemoExams.ComputerLogicDesign()),
+    ("logic-en", DemoExams.ComputerLogicDesignEnglish()),
+    ("edge", DemoExams.EdgeCases()),
+];
 
 foreach (var (name, exam) in exams)
 {

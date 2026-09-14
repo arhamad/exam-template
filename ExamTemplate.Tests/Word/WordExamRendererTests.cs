@@ -19,6 +19,8 @@ public class WordExamRendererTests
         { nameof(DemoExams.ComputerLogicDesign), 1, PaperKind.AnswerKey },
         { nameof(DemoExams.EdgeCases), 0, PaperKind.Student },
         { nameof(DemoExams.EdgeCases), 1, PaperKind.AnswerKey },
+        { nameof(DemoExams.ComputerLogicDesignEnglish), 0, PaperKind.Student },
+        { nameof(DemoExams.ComputerLogicDesignEnglish), 1, PaperKind.AnswerKey },
     };
 
     [Theory]
@@ -140,9 +142,83 @@ public class WordExamRendererTests
         Assert.Contains("Q'", leftToRightRuns);
     }
 
+    [Fact]
+    public void English_student_copy_is_worded_in_english_with_option_letters_in_order()
+    {
+        var paper = Paper(nameof(DemoExams.ComputerLogicDesignEnglish), 0);
+
+        using var document = Open(Renderer.Render(paper, PaperKind.Student));
+        var text = AllText(document);
+
+        Assert.Contains("Name:", text);
+        Assert.Contains("Exam instructions", text);
+        Assert.Contains("Questions: 8 questions", text);
+        Assert.Contains("End of questions – Good luck", TextsOfStyle(document, "ExamEnd"));
+        Assert.DoesNotContain("Answer key", text);
+        Assert.Equal(
+            paper.Sections.SelectMany(section => section.Questions).SelectMany(question => question.Options).Select(option => option.Label + ")"),
+            TextsOfStyle(document, "ExamOptionLabel").Where(label => label.Length > 0));
+        Assert.Equal(5 + 8 + 6, AnswerLineRows(document));
+    }
+
+    [Fact]
+    public void English_answer_key_marks_every_correct_answer()
+    {
+        var paper = Paper(nameof(DemoExams.ComputerLogicDesignEnglish), 1);
+
+        using var document = Open(Renderer.Render(paper, PaperKind.AnswerKey));
+        var text = AllText(document);
+
+        Assert.Contains("Answer key – Version B – for examiners only", text);
+        Assert.Contains("Answer summary", text);
+        Assert.Contains("Model answer:", text);
+        Assert.Equal(paper.AnswerSummary.Count, text.Split(DesignTokens.FilledBubble).Length - 1);
+    }
+
+    [Fact]
+    public void English_header_and_footer_show_the_course_the_version_and_page_numbers()
+    {
+        using var document = Open(Renderer.Render(Paper(nameof(DemoExams.ComputerLogicDesignEnglish), 1), PaperKind.Student));
+        var footer = string.Concat(document.MainDocumentPart!.FooterParts.Single().Footer!.Descendants<Text>().Select(text => text.Text));
+
+        Assert.Contains("First Semester 1261 – 2026/2027", AllText(document));
+        Assert.Contains("1290 – Computer Logic Design", footer);
+        Assert.Contains("Page 1 of 1", footer);
+        Assert.Contains("Version B – 2026/2027", footer);
+    }
+
+    [Fact]
+    public void Only_arabic_phrases_are_right_to_left_runs_in_english_documents()
+    {
+        using var document = Open(Renderer.Render(Paper(nameof(DemoExams.ComputerLogicDesignEnglish), 0), PaperKind.Student));
+
+        var rightToLeftRuns = document.MainDocumentPart!.Document!.Body!.Descendants<Run>()
+            .Where(run => run.RunProperties?.RightToLeftText is not null)
+            .Select(TextOf);
+
+        Assert.Equal(new[] { "دائرة تتابعية – مثل المسجل" }, rightToLeftRuns);
+    }
+
+    [Fact]
+    public void One_renderer_uses_the_template_of_each_paper_language()
+    {
+        var renderer = new WordExamRenderer();
+
+        Assert.Equal("اسم الطالب:", FirstStudentLabel(nameof(DemoExams.ComputerLogicDesign)));
+        Assert.Equal("Name:", FirstStudentLabel(nameof(DemoExams.ComputerLogicDesignEnglish)));
+        Assert.Equal("اسم الطالب:", FirstStudentLabel(nameof(DemoExams.ComputerLogicDesign)));
+
+        string FirstStudentLabel(string exam)
+        {
+            using var document = Open(renderer.Render(Paper(exam, 0), PaperKind.Student));
+            return TextsOfStyle(document, "ExamStudentLabel").First();
+        }
+    }
+
     private static ExamPaper Paper(string exam, int version) => ExamPaperBuilder.Build(exam switch
     {
         nameof(DemoExams.ComputerLogicDesign) => DemoExams.ComputerLogicDesign(),
+        nameof(DemoExams.ComputerLogicDesignEnglish) => DemoExams.ComputerLogicDesignEnglish(),
         nameof(DemoExams.EdgeCases) => DemoExams.EdgeCases(),
         _ => throw new ArgumentOutOfRangeException(nameof(exam)),
     }, version);
