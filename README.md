@@ -59,8 +59,9 @@ docx and PDF, plus the exam JSON, so the same versions can be generated again la
 
 ## Languages
 
-The interface and the exam each have their own language. An Arabic interface can edit an English exam, and the other way
-round.
+The interface and the exam each have their own language. «امتحان جديد» on the home page starts an exam in the interface
+language; imported and sample exams keep theirs. After that the two are independent: an Arabic interface can edit an
+English exam, and the other way round.
 
 ### Interface language
 

@@ -19,6 +19,18 @@ public class ExamModelTests
         Assert.Equal(ExamDefinition.CurrentSchemaVersion, exam.SchemaVersion);
     }
 
+    [Fact]
+    public void CreateNew_in_english_uses_the_english_defaults()
+    {
+        var exam = ExamDefinition.CreateNew(new DateOnly(2026, 9, 14), ExamLanguage.English);
+
+        Assert.Equal(ExamLanguage.English, exam.Language);
+        Assert.Equal(ExamDefaults.English.Instructions, exam.Instructions);
+        Assert.Equal(ExamDefaults.English.UniversityName, exam.Header.UniversityName);
+        Assert.Equal(ExamDefaults.English.ExamMode, exam.Header.ExamMode);
+        Assert.Equal("2026/2027", exam.Header.AcademicYear);
+    }
+
     [Theory]
     [InlineData(2026, 9, "2026/2027")]
     [InlineData(2027, 1, "2026/2027")]

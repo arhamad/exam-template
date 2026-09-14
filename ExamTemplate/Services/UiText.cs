@@ -26,6 +26,9 @@ public sealed class UiText
     /// <summary>For the browser's <c>toLocaleString</c>: the Gregorian calendar and Western digits in both languages.</summary>
     public string DateLocale => IsEnglish ? "en-GB" : "ar-u-ca-gregory-nu-latn";
 
+    /// <summary>The language a new exam starts in; it can be changed on the details page.</summary>
+    public ExamLanguage NewExamLanguage => IsEnglish ? ExamLanguage.English : ExamLanguage.Arabic;
+
     public void Use(UiLanguage language) =>
         Language = Enum.IsDefined(language) ? language : throw new ArgumentOutOfRangeException(nameof(language), language, null);
 

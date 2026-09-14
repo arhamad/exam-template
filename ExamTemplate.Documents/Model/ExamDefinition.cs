@@ -19,16 +19,19 @@ public sealed class ExamDefinition
 
     public decimal TotalMarks() => Sections.Sum(section => section.TotalMarks());
 
-    public static ExamDefinition CreateNew() => CreateNew(DateOnly.FromDateTime(DateTime.Now));
+    /// <summary>A new exam in <paramref name="language"/>, with that language's header defaults and instructions.</summary>
+    public static ExamDefinition CreateNew(ExamLanguage language = ExamLanguage.Arabic) =>
+        CreateNew(DateOnly.FromDateTime(DateTime.Now), language);
 
-    public static ExamDefinition CreateNew(DateOnly today)
+    public static ExamDefinition CreateNew(DateOnly today, ExamLanguage language = ExamLanguage.Arabic)
     {
         // The academic year starts in the autumn semester.
         var startYear = today.Month >= 8 ? today.Year : today.Year - 1;
-        var defaults = ExamDefaults.Arabic;
+        var defaults = ExamDefaults.For(language);
 
         return new ExamDefinition
         {
+            Language = language,
             Header = defaults.Header($"{startYear}/{startYear + 1}"),
             Instructions = [.. defaults.Instructions],
             Sections = [new ExamSection()],

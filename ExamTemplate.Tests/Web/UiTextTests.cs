@@ -16,6 +16,7 @@ public class UiTextTests
         Assert.Equal("سؤالان، علامتان", ui.Join([ui.Questions(2), ui.Marks(2)]));
         Assert.Equal("خطأ واحد", ui.Errors(1));
         Assert.Equal("صح", ui.TrueFalse(true));
+        Assert.Equal(ExamLanguage.Arabic, ui.NewExamLanguage);
     }
 
     [Fact]
@@ -32,6 +33,7 @@ public class UiTextTests
         Assert.Equal("Essay", ui.TypeLabel(QuestionType.Essay));
         Assert.Equal("False", ui.TrueFalse(false));
         Assert.Equal("en-GB", ui.DateLocale);
+        Assert.Equal(ExamLanguage.English, ui.NewExamLanguage);
     }
 
     [Fact]

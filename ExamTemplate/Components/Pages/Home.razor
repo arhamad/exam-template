@@ -80,7 +80,7 @@ else
             <button type="button" class="start-option" disabled="@busy" @onclick="CreateNewAsync">
                 <Icon Name="plus" Class="start-icon"/>
                 <span class="start-title">@Ui.Text("امتحان جديد", "New exam")</span>
-                <span class="start-text">@Ui.Text("قسم فارغ مع التعليمات الافتراضية.", "One empty section with the default instructions.")</span>
+                <span class="start-text">@Ui.Text("امتحان باللغة العربية: قسم فارغ مع التعليمات الافتراضية.", "An English exam: one empty section with the default instructions.")</span>
             </button>
 
             <label class="start-option @(busy ? "is-disabled" : null)">
@@ -151,7 +151,8 @@ else
         if (!await ConfirmReplaceAsync())
             return;
 
-        Draft.Replace(ExamDefinition.CreateNew());
+        // Starts in the interface language; the exam language can be changed on the details page.
+        Draft.Replace(ExamDefinition.CreateNew(Ui.NewExamLanguage));
         Navigation.NavigateTo("exam/details");
     }
 
