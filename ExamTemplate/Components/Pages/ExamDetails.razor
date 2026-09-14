@@ -22,6 +22,22 @@ else if (Exam is not { } exam)
 else
 {
     var header = exam.Header;
+    var defaults = ExamDefaults.For(exam.Language);
+    var dir = ExamContent.Dir(exam.Language);
+    var lang = ExamContent.Lang(exam.Language);
+
+    <section class="panel" aria-labelledby="language-title">
+        <h2 id="language-title" class="panel-title">لغة الامتحان</h2>
+        <p class="panel-lead">تُطبع الورقة الإنجليزية من اليسار إلى اليمين، وتُستبدل القيم الافتراضية التي لم تُعدَّل.</p>
+        <div class="btn-group" role="radiogroup" aria-labelledby="language-title">
+            @foreach (var (language, label) in Languages)
+            {
+                <input id="@($"language-{language}")" type="radio" class="btn-check" name="exam-language"
+                       checked="@(exam.Language == language)" @onchange="() => ChangeLanguage(exam, language)"/>
+                <label class="btn btn-outline-primary" for="@($"language-{language}")" lang="@ExamContent.Lang(language)">@label</label>
+            }
+        </div>
+    </section>
 
     <section class="panel" aria-labelledby="header-title">
         <h2 id="header-title" class="panel-title">رأس الورقة</h2>
@@ -30,7 +46,7 @@ else
         <div class="row g-3">
             <div class="col-md-6">
                 <label class="form-label" for="field-UniversityName">اسم الجامعة<span class="required-mark" aria-hidden="true">*</span></label>
-                <input id="field-UniversityName" class="form-control" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
+                <input id="field-UniversityName" class="form-control" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
                        aria-invalid="@InvalidFor(nameof(ExamHeader.UniversityName))" aria-describedby="@DescribedBy(nameof(ExamHeader.UniversityName))"
                        @bind="header.UniversityName" @bind:after="() => Changed(nameof(ExamHeader.UniversityName))"
                        @onblur="() => Touch(nameof(ExamHeader.UniversityName))"/>
@@ -39,8 +55,8 @@ else
 
             <div class="col-md-6">
                 <label class="form-label" for="field-ExamTitle">عنوان الامتحان<span class="required-mark" aria-hidden="true">*</span></label>
-                <input id="field-ExamTitle" class="form-control" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
-                       placeholder="الامتحان النهائي"
+                <input id="field-ExamTitle" class="form-control" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
+                       placeholder="@defaults.ExamTitle"
                        aria-invalid="@InvalidFor(nameof(ExamHeader.ExamTitle))" aria-describedby="@DescribedBy(nameof(ExamHeader.ExamTitle))"
                        @bind="header.ExamTitle" @bind:after="() => Changed(nameof(ExamHeader.ExamTitle))"
                        @onblur="() => Touch(nameof(ExamHeader.ExamTitle))"/>
@@ -49,8 +65,8 @@ else
 
             <div class="col-md-6">
                 <label class="form-label" for="field-CourseName">اسم المقرر<span class="required-mark" aria-hidden="true">*</span></label>
-                <input id="field-CourseName" class="form-control" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
-                       placeholder="مثال: تصميم منطق الحاسوب"
+                <input id="field-CourseName" class="form-control" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
+                       placeholder="@defaults.CourseNamePlaceholder"
                        aria-invalid="@InvalidFor(nameof(ExamHeader.CourseName))" aria-describedby="@DescribedBy(nameof(ExamHeader.CourseName))"
                        @bind="header.CourseName" @bind:after="() => Changed(nameof(ExamHeader.CourseName))"
                        @onblur="() => Touch(nameof(ExamHeader.CourseName))"/>
@@ -79,8 +95,8 @@ else
 
             <div class="col-md-6">
                 <label class="form-label" for="field-Semester">الفصل الدراسي</label>
-                <input id="field-Semester" class="form-control" maxlength="@ExamLimits.MaxHeaderFieldLength"
-                       placeholder="الفصل الأول"
+                <input id="field-Semester" class="form-control" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxHeaderFieldLength"
+                       placeholder="@defaults.Semester"
                        aria-invalid="@InvalidFor(nameof(ExamHeader.Semester))" aria-describedby="@DescribedBy(nameof(ExamHeader.Semester))"
                        @bind="header.Semester" @bind:after="() => Changed(nameof(ExamHeader.Semester))"
                        @onblur="() => Touch(nameof(ExamHeader.Semester))"/>
@@ -89,8 +105,8 @@ else
 
             <div class="col-sm-6 col-md-3">
                 <label class="form-label" for="field-Duration">مدة الامتحان<span class="required-mark" aria-hidden="true">*</span></label>
-                <input id="field-Duration" class="form-control" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
-                       placeholder="ساعة ونصف"
+                <input id="field-Duration" class="form-control" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
+                       placeholder="@defaults.Duration"
                        aria-invalid="@InvalidFor(nameof(ExamHeader.Duration))" aria-describedby="@DescribedBy(nameof(ExamHeader.Duration))"
                        @bind="header.Duration" @bind:after="() => Changed(nameof(ExamHeader.Duration))"
                        @onblur="() => Touch(nameof(ExamHeader.Duration))"/>
@@ -99,15 +115,17 @@ else
 
             <div class="col-sm-6 col-md-3">
                 <label class="form-label" for="field-ExamMode">نوع الامتحان</label>
-                <select id="field-ExamMode" class="form-select"
+                <select id="field-ExamMode" class="form-select" dir="@dir" lang="@lang"
                         aria-invalid="@InvalidFor(nameof(ExamHeader.ExamMode))" aria-describedby="@DescribedBy(nameof(ExamHeader.ExamMode))"
                         @bind="header.ExamMode" @bind:after="() => Changed(nameof(ExamHeader.ExamMode))">
                     <option value="">غير محدد</option>
-                    <option value="نظري">نظري</option>
-                    <option value="عملي">عملي</option>
-                    @if (header.ExamMode is { Length: > 0 } mode && mode is not ("نظري" or "عملي"))
+                    @foreach (var mode in defaults.ExamModes)
                     {
                         <option value="@mode">@mode</option>
+                    }
+                    @if (header.ExamMode is { Length: > 0 } current && !defaults.ExamModes.Contains(current))
+                    {
+                        <option value="@current">@current</option>
                     }
                 </select>
                 <FieldIssues Issues="IssuesFor(nameof(ExamHeader.ExamMode))" Id="issues-ExamMode"/>
@@ -128,6 +146,8 @@ else
 }
 
 @code {
+    private static readonly (ExamLanguage Language, string Label)[] Languages = [(ExamLanguage.Arabic, "العربية"), (ExamLanguage.English, "English")];
+
     private readonly HashSet<string> touched = [];
 
     private IEnumerable<ValidationIssue> IssuesFor(string field) =>
@@ -145,4 +165,11 @@ else
     }
 
     private void Touch(string field) => touched.Add(field);
+
+    // Defaults the author hasn't edited switch to the new language; the rest of the exam stays as written.
+    private void ChangeLanguage(ExamDefinition exam, ExamLanguage language)
+    {
+        ExamEditing.ChangeLanguage(exam, language);
+        Draft.NotifyChanged();
+    }
 }

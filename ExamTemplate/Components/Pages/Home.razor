@@ -48,7 +48,7 @@ else
                 <div>
                     <dt>المقرر</dt>
                     <dd>
-                        @(string.IsNullOrWhiteSpace(exam.Header.CourseName) ? "بلا اسم" : exam.Header.CourseName)
+                        <span dir="auto">@(string.IsNullOrWhiteSpace(exam.Header.CourseName) ? "بلا اسم" : exam.Header.CourseName)</span>
                         @if (!string.IsNullOrWhiteSpace(exam.Header.CourseCode))
                         {
                             <span class="text-body-secondary ms-1" dir="ltr">(@exam.Header.CourseCode)</span>
@@ -91,10 +91,16 @@ else
                            disabled="@busy" OnChange="ImportAsync"/>
             </label>
 
-            <button type="button" class="start-option" disabled="@busy" @onclick="LoadSampleAsync">
+            <button type="button" class="start-option" disabled="@busy" @onclick="() => LoadSampleAsync(DemoExams.ComputerLogicDesign)">
                 <Icon Name="sample" Class="start-icon"/>
                 <span class="start-title">تحميل نموذج تجريبي</span>
                 <span class="start-text">امتحان «تصميم منطق الحاسوب»: ثلاثة أقسام وثمانية أسئلة ونموذجان.</span>
+            </button>
+
+            <button type="button" class="start-option" disabled="@busy" @onclick="() => LoadSampleAsync(DemoExams.ComputerLogicDesignEnglish)">
+                <Icon Name="sample" Class="start-icon"/>
+                <span class="start-title">نموذج تجريبي بالإنجليزية</span>
+                <span class="start-text">الامتحان نفسه باللغة الإنجليزية، ويُطبع من اليسار إلى اليمين.</span>
             </button>
         </div>
     </section>
@@ -144,12 +150,12 @@ else
         Navigation.NavigateTo("exam/details");
     }
 
-    private async Task LoadSampleAsync()
+    private async Task LoadSampleAsync(Func<ExamDefinition> sample)
     {
         if (!await ConfirmReplaceAsync())
             return;
 
-        Draft.Replace(DemoExams.ComputerLogicDesign());
+        Draft.Replace(sample());
         Navigation.NavigateTo("exam/questions");
     }
 

@@ -5,6 +5,9 @@
     var isFirst = Index == 0;
     var isLast = Index == Exam.Sections.Count - 1;
     var questionLimitReached = Exam.QuestionCount() >= ExamLimits.MaxQuestions;
+    var defaults = ExamDefaults.For(Exam.Language);
+    var dir = ExamContent.Dir(Exam.Language);
+    var lang = ExamContent.Lang(Exam.Language);
 }
 
 <section id="@SectionId" class="exam-section focus-target" tabindex="-1" aria-labelledby="@($"{SectionId}-heading")">
@@ -34,15 +37,15 @@
     <div class="row g-3 section-fields">
         <div class="col-md-6">
             <label class="form-label" for="@($"{SectionId}-title-input")">عنوان القسم <span class="form-hint">اختياري</span></label>
-            <input id="@($"{SectionId}-title-input")" class="form-control" maxlength="@ExamLimits.MaxSectionTitleLength"
-                   placeholder="مثال: القسم الأول: أسئلة موضوعية"
+            <input id="@($"{SectionId}-title-input")" class="form-control" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxSectionTitleLength"
+                   placeholder="@defaults.SectionTitlePlaceholder"
                    @bind="Section.Title" @bind:after="() => Edited(nameof(ExamSection.Title))"/>
             <FieldIssues Issues="IssuesFor(nameof(ExamSection.Title))" Id="@($"{SectionId}-title-issues")"/>
         </div>
         <div class="col-md-6">
             <label class="form-label" for="@($"{SectionId}-instruction")">تعليمات القسم <span class="form-hint">اختيارية</span></label>
-            <textarea id="@($"{SectionId}-instruction")" class="form-control" rows="1" maxlength="@ExamLimits.MaxInstructionLength"
-                      placeholder="مثال: اختر/ي الإجابة الأكثر صحة لكل سؤال."
+            <textarea id="@($"{SectionId}-instruction")" class="form-control" rows="1" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxInstructionLength"
+                      placeholder="@defaults.SectionInstructionPlaceholder"
                       @bind="Section.Instruction" @bind:after="() => Edited(nameof(ExamSection.Instruction))"></textarea>
             <FieldIssues Issues="IssuesFor(nameof(ExamSection.Instruction))" Id="@($"{SectionId}-instruction-issues")"/>
         </div>

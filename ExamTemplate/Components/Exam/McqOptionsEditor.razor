@@ -17,7 +17,7 @@
                        @onchange="() => SetCorrectAsync(option)"/>
                 <label class="option-label" for="@($"o-{option.Id}-correct")" aria-hidden="true">@label</label>
                 <div class="option-text">
-                    <input id="@($"o-{option.Id}-text")" class="form-control" dir="auto" maxlength="@ExamLimits.MaxOptionTextLength"
+                    <input id="@($"o-{option.Id}-text")" class="form-control" dir="@ExamContent.Dir(Language)" lang="@ExamContent.Lang(Language)" maxlength="@ExamLimits.MaxOptionTextLength"
                            aria-label="@($"نص الخيار ({label})")"
                            aria-invalid="@(hasError ? "true" : null)"
                            aria-describedby="@(optionIssues.Count > 0 ? $"o-{option.Id}-issues" : null)"

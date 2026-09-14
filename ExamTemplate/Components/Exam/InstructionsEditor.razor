@@ -25,7 +25,7 @@
                 var isLast = i == Exam.Instructions.Count - 1;
                 <li @key="rowId" class="instruction-row">
                     <span class="instruction-number" aria-hidden="true">@number</span>
-                    <textarea id="@TextId(rowId)" class="form-control" rows="1" maxlength="@ExamLimits.MaxInstructionLength"
+                    <textarea id="@TextId(rowId)" class="form-control" rows="1" dir="@ExamContent.Dir(Exam.Language)" lang="@ExamContent.Lang(Exam.Language)" maxlength="@ExamLimits.MaxInstructionLength"
                               aria-label="@($"نص التعليمة {number}")"
                               @bind="Exam.Instructions[i]" @bind:after="OnEdited"></textarea>
                     <div class="row-actions">

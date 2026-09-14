@@ -5,6 +5,8 @@
     var visible = Draft.Validation.ForQuestion(Question.Id).Where(IsVisible).ToList();
     var isFirst = IndexInSection == 0;
     var isLast = IndexInSection == Section.Questions.Count - 1;
+    var dir = ExamContent.Dir(Exam.Language);
+    var lang = ExamContent.Lang(Exam.Language);
 }
 
 <article id="@CardId" class="question-card focus-target" tabindex="-1" aria-labelledby="@($"{CardId}-title")">
@@ -66,7 +68,7 @@
 
     <div class="question-field">
         <label class="form-label" for="@FieldId("text")">نص السؤال<span class="required-mark" aria-hidden="true">*</span></label>
-        <textarea id="@FieldId("text")" class="form-control" rows="2" maxlength="@ExamLimits.MaxQuestionTextLength" aria-required="true"
+        <textarea id="@FieldId("text")" class="form-control" rows="2" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxQuestionTextLength" aria-required="true"
                   aria-invalid="@InvalidFor(visible, nameof(ExamQuestion.Text))"
                   aria-describedby="@DescribedBy(visible, nameof(ExamQuestion.Text), "text-issues")"
                   @bind="Question.Text" @bind:after="() => Edited(nameof(ExamQuestion.Text))"
@@ -113,7 +115,7 @@
                 </div>
                 <div class="col-12">
                     <label class="form-label" for="@FieldId("model")">الإجابة النموذجية</label>
-                    <textarea id="@FieldId("model")" class="form-control" rows="3" maxlength="@ExamLimits.MaxModelAnswerLength"
+                    <textarea id="@FieldId("model")" class="form-control" rows="3" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxModelAnswerLength"
                               @bind="Question.ModelAnswer" @bind:after="() => Edited(nameof(ExamQuestion.ModelAnswer))"
                               @onblur="() => Touch(nameof(ExamQuestion.ModelAnswer))"></textarea>
                     <div class="form-text">تظهر في مفتاح الإجابة فقط.</div>
@@ -125,7 +127,7 @@
 
     <div class="question-field">
         <label class="form-label" for="@FieldId("note")">ملاحظة <span class="form-hint">اختيارية، تُطبع تحت نص السؤال</span></label>
-        <textarea id="@FieldId("note")" class="form-control" rows="1" maxlength="@ExamLimits.MaxNoteLength"
+        <textarea id="@FieldId("note")" class="form-control" rows="1" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxNoteLength"
                   @bind="Question.Note" @bind:after="() => Edited(nameof(ExamQuestion.Note))"></textarea>
         <FieldIssues Issues="IssuesFor(visible, nameof(ExamQuestion.Note))" Id="@FieldId("note-issues")"/>
     </div>
