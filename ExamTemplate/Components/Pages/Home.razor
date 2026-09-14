@@ -51,13 +51,13 @@ else
                         @(string.IsNullOrWhiteSpace(exam.Header.CourseName) ? "بلا اسم" : exam.Header.CourseName)
                         @if (!string.IsNullOrWhiteSpace(exam.Header.CourseCode))
                         {
-                            <span class="text-body-secondary" dir="ltr">(@exam.Header.CourseCode)</span>
+                            <span class="text-body-secondary ms-1" dir="ltr">(@exam.Header.CourseCode)</span>
                         }
                     </dd>
                 </div>
                 <div>
                     <dt>المحتوى</dt>
-                    <dd>@(questionCount == 0 ? "لا توجد أسئلة" : ArabicText.Questions(questionCount)) · @ArabicText.Marks(exam.TotalMarks())</dd>
+                    <dd>@(questionCount == 0 ? "لا توجد أسئلة" : ArabicText.Questions(questionCount))، @ArabicText.Marks(exam.TotalMarks())</dd>
                 </div>
                 <div>
                     <dt>آخر حفظ</dt>

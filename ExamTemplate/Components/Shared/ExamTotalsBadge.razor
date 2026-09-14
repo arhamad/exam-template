@@ -4,8 +4,8 @@
 {
     var count = exam.QuestionCount();
     <span class="totals-badge" title="عدد الأسئلة ومجموع العلامات">
-        <span>@(count == 0 ? "لا توجد أسئلة" : ArabicText.Questions(count))</span>
-        <span class="totals-separator" aria-hidden="true">·</span>
+        @* An Arabic comma, not a middle dot: next to digits a dot reads like the Arabic zero. *@
+        <span>@(count == 0 ? "لا توجد أسئلة" : ArabicText.Questions(count))،</span>
         <span>المجموع: @ArabicText.Marks(exam.TotalMarks())</span>
     </span>
 }

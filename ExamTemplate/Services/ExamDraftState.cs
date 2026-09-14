@@ -25,6 +25,9 @@ public sealed class ExamDraftState(BrowserInterop browser, ILogger<ExamDraftStat
 {
     public static readonly TimeSpan AutosaveDelay = TimeSpan.FromSeconds(1);
 
+    private const string RetryRestoreMessage =
+        "تعذّرت قراءة المسودة المحفوظة في هذا المتصفح. أعد تحميل الصفحة للمحاولة مرة أخرى.";
+
     private Task? loading;
     private CancellationTokenSource? pendingSave;
     private DraftValidation? validation;
@@ -155,9 +158,15 @@ public sealed class ExamDraftState(BrowserInterop browser, ILogger<ExamDraftStat
         {
             // The browser is gone; nothing to show.
         }
+        catch (OperationCanceledException exception)
+        {
+            // Usually the page was reloaded or closed while loading; otherwise the browser didn't answer in time.
+            RestoreError = RetryRestoreMessage;
+            logger.LogWarning(exception, "Loading the draft from the browser was canceled or timed out.");
+        }
         catch (Exception exception)
         {
-            RestoreError = "تعذّرت قراءة المسودة المحفوظة في هذا المتصفح. أعد تحميل الصفحة للمحاولة مرة أخرى.";
+            RestoreError = RetryRestoreMessage;
             logger.LogError(exception, "Loading the draft from the browser failed.");
         }
 
