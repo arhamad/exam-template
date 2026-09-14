@@ -15,3 +15,6 @@ TestResults/
 
 # Claude Code agent worktrees
 .claude/
+
+# Playwright MCP logs
+.playwright-mcp/

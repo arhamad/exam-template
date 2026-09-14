@@ -202,7 +202,7 @@ public static class ExamValidator
                 PositionDependentPhrases.Any(phrase => option.Text.Contains(phrase, StringComparison.OrdinalIgnoreCase))))
         {
             add(IssueSeverity.Warning,
-                $"يبدو أن خيارات السؤال {number} تعتمد على ترتيبها (مثل «جميع ما سبق»)؛ فعّل «تثبيت ترتيب الخيارات».",
+                $"يبدو أن خيارات السؤال {number} تعتمد على ترتيبها (مثل «جميع ما سبق»)؛ فعّل «الحفاظ على ترتيب الخيارات عند الخلط».",
                 nameof(ExamQuestion.KeepOptionOrder), null);
         }
     }
