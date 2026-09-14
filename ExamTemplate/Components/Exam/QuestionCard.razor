@@ -12,12 +12,12 @@
 <article id="@CardId" class="question-card focus-target" tabindex="-1" aria-labelledby="@($"{CardId}-title")">
     <header class="question-header">
         <h3 id="@($"{CardId}-title")" class="question-title">
-            <span class="question-number">السؤال @Number</span>
-            <span class="type-badge @TypeClass">@ArabicText.TypeLabel(Question.Type)</span>
+            <span class="question-number">@Ui.Text("السؤال", "Question") @Number</span>
+            <span class="type-badge @TypeClass">@Ui.TypeLabel(Question.Type)</span>
         </h3>
 
         <div class="question-marks">
-            <label class="form-label mb-0" for="@FieldId("marks")">العلامة<span class="required-mark" aria-hidden="true">*</span></label>
+            <label class="form-label mb-0" for="@FieldId("marks")">@Ui.Text("العلامة", "Marks")<span class="required-mark" aria-hidden="true">*</span></label>
             <input id="@FieldId("marks")" type="number" class="form-control form-control-sm marks-input" dir="ltr"
                    min="0" max="@ExamLimits.MaxMarks" step="any" aria-required="true"
                    aria-invalid="@InvalidFor(visible, nameof(ExamQuestion.Marks))"
@@ -25,22 +25,22 @@
                    @onblur="() => Touch(nameof(ExamQuestion.Marks))"/>
         </div>
 
-        <div class="question-actions" role="group" aria-label="@($"إجراءات السؤال {Number}")">
+        <div class="question-actions" role="group" aria-label="@Ui.Text($"إجراءات السؤال {Number}", $"Question {Number} actions")">
             <button id="@FieldId("up")" type="button" class="btn btn-sm btn-outline-secondary icon-button"
-                    title="نقل للأعلى" aria-label="@($"نقل السؤال {Number} للأعلى")" disabled="@isFirst"
+                    title="@Ui.Text("نقل للأعلى", "Move up")" aria-label="@Ui.Text($"نقل السؤال {Number} للأعلى", $"Move question {Number} up")" disabled="@isFirst"
                     @onclick="() => MoveAsync(-1)">
                 <Icon Name="up"/>
             </button>
             <button id="@FieldId("down")" type="button" class="btn btn-sm btn-outline-secondary icon-button"
-                    title="نقل للأسفل" aria-label="@($"نقل السؤال {Number} للأسفل")" disabled="@isLast"
+                    title="@Ui.Text("نقل للأسفل", "Move down")" aria-label="@Ui.Text($"نقل السؤال {Number} للأسفل", $"Move question {Number} down")" disabled="@isLast"
                     @onclick="() => MoveAsync(1)">
                 <Icon Name="down"/>
             </button>
             @if (Exam.Sections.Count > 1)
             {
-                <select class="form-select form-select-sm move-select" aria-label="@($"نقل السؤال {Number} إلى قسم آخر")"
+                <select class="form-select form-select-sm move-select" aria-label="@Ui.Text($"نقل السؤال {Number} إلى قسم آخر", $"Move question {Number} to another section")"
                         @onchange="MoveToSectionAsync">
-                    <option value="" selected>نقل إلى قسم…</option>
+                    <option value="" selected>@Ui.Text("نقل إلى قسم…", "Move to section…")</option>
                     @for (var index = 0; index < Exam.Sections.Count; index++)
                     {
                         var target = Exam.Sections[index];
@@ -52,13 +52,13 @@
                     }
                 </select>
             }
-            <button type="button" class="btn btn-sm btn-outline-secondary icon-button" title="تكرار السؤال"
-                    aria-label="@($"تكرار السؤال {Number}")" disabled="@(Exam.QuestionCount() >= ExamLimits.MaxQuestions)"
+            <button type="button" class="btn btn-sm btn-outline-secondary icon-button" title="@Ui.Text("تكرار السؤال", "Duplicate question")"
+                    aria-label="@Ui.Text($"تكرار السؤال {Number}", $"Duplicate question {Number}")" disabled="@(Exam.QuestionCount() >= ExamLimits.MaxQuestions)"
                     @onclick="DuplicateAsync">
                 <Icon Name="copy"/>
             </button>
-            <button type="button" class="btn btn-sm btn-outline-danger icon-button" title="حذف السؤال"
-                    aria-label="@($"حذف السؤال {Number}")" @onclick="DeleteAsync">
+            <button type="button" class="btn btn-sm btn-outline-danger icon-button" title="@Ui.Text("حذف السؤال", "Delete question")"
+                    aria-label="@Ui.Text($"حذف السؤال {Number}", $"Delete question {Number}")" @onclick="DeleteAsync">
                 <Icon Name="trash"/>
             </button>
         </div>
@@ -67,7 +67,7 @@
     <FieldIssues Issues="IssuesFor(visible, nameof(ExamQuestion.Marks))" Id="@FieldId("marks-issues")"/>
 
     <div class="question-field">
-        <label class="form-label" for="@FieldId("text")">نص السؤال<span class="required-mark" aria-hidden="true">*</span></label>
+        <label class="form-label" for="@FieldId("text")">@Ui.Text("نص السؤال", "Question text")<span class="required-mark" aria-hidden="true">*</span></label>
         <textarea id="@FieldId("text")" class="form-control" rows="2" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxQuestionTextLength" aria-required="true"
                   aria-invalid="@InvalidFor(visible, nameof(ExamQuestion.Text))"
                   aria-describedby="@DescribedBy(visible, nameof(ExamQuestion.Text), "text-issues")"
@@ -85,17 +85,17 @@
 
         case QuestionType.TrueFalse:
             <fieldset class="question-field">
-                <legend class="form-label">الإجابة الصحيحة<span class="required-mark" aria-hidden="true">*</span></legend>
+                <legend class="form-label">@Ui.Text("الإجابة الصحيحة", "Correct answer")<span class="required-mark" aria-hidden="true">*</span></legend>
                 <div class="tf-choices">
                     <div class="form-check form-check-inline">
                         <input id="@FieldId("true")" class="form-check-input" type="radio" name="@FieldId("tf")"
                                checked="@(Question.TrueFalseAnswer == true)" @onchange="() => SetTrueFalseAsync(true)"/>
-                        <label class="form-check-label" for="@FieldId("true")">@ArabicText.TrueFalse(true)</label>
+                        <label class="form-check-label" for="@FieldId("true")">@Ui.TrueFalse(true)</label>
                     </div>
                     <div class="form-check form-check-inline">
                         <input id="@FieldId("false")" class="form-check-input" type="radio" name="@FieldId("tf")"
                                checked="@(Question.TrueFalseAnswer == false)" @onchange="() => SetTrueFalseAsync(false)"/>
-                        <label class="form-check-label" for="@FieldId("false")">@ArabicText.TrueFalse(false)</label>
+                        <label class="form-check-label" for="@FieldId("false")">@Ui.TrueFalse(false)</label>
                     </div>
                 </div>
                 <FieldIssues Issues="IssuesFor(visible, nameof(ExamQuestion.TrueFalseAnswer))" Id="@FieldId("tf-issues")"/>
@@ -105,20 +105,23 @@
         case QuestionType.Essay:
             <div class="row g-3 question-field">
                 <div class="col-sm-5 col-lg-3">
-                    <label class="form-label" for="@FieldId("lines")">عدد أسطر الإجابة</label>
+                    <label class="form-label" for="@FieldId("lines")">@Ui.Text("عدد أسطر الإجابة", "Answer lines")</label>
                     <input id="@FieldId("lines")" type="number" class="form-control" dir="ltr"
                            min="@ExamLimits.MinAnswerLines" max="@ExamLimits.MaxAnswerLines" step="1"
                            aria-invalid="@InvalidFor(visible, nameof(ExamQuestion.AnswerLines))"
                            @bind="Question.AnswerLines" @bind:after="() => Edited(nameof(ExamQuestion.AnswerLines))"/>
-                    <div class="form-text">أسطر فارغة للكتابة في نسخة الطالب (@ExamLimits.MinAnswerLines–@ExamLimits.MaxAnswerLines).</div>
+                    <div class="form-text">
+                        @Ui.Text($"أسطر فارغة للكتابة في نسخة الطالب ({ExamLimits.MinAnswerLines}–{ExamLimits.MaxAnswerLines}).",
+                            $"Blank lines to write on in the student copy ({ExamLimits.MinAnswerLines}–{ExamLimits.MaxAnswerLines}).")
+                    </div>
                     <FieldIssues Issues="IssuesFor(visible, nameof(ExamQuestion.AnswerLines))" Id="@FieldId("lines-issues")"/>
                 </div>
                 <div class="col-12">
-                    <label class="form-label" for="@FieldId("model")">الإجابة النموذجية</label>
+                    <label class="form-label" for="@FieldId("model")">@Ui.Text("الإجابة النموذجية", "Model answer")</label>
                     <textarea id="@FieldId("model")" class="form-control" rows="3" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxModelAnswerLength"
                               @bind="Question.ModelAnswer" @bind:after="() => Edited(nameof(ExamQuestion.ModelAnswer))"
                               @onblur="() => Touch(nameof(ExamQuestion.ModelAnswer))"></textarea>
-                    <div class="form-text">تظهر في مفتاح الإجابة فقط.</div>
+                    <div class="form-text">@Ui.Text("تظهر في مفتاح الإجابة فقط.", "Shown in the answer key only.")</div>
                     <FieldIssues Issues="IssuesFor(visible, nameof(ExamQuestion.ModelAnswer))" Id="@FieldId("model-issues")"/>
                 </div>
             </div>
@@ -126,7 +129,9 @@
     }
 
     <div class="question-field">
-        <label class="form-label" for="@FieldId("note")">ملاحظة <span class="form-hint">اختيارية، تُطبع تحت نص السؤال</span></label>
+        <label class="form-label" for="@FieldId("note")">
+            @Ui.Text("ملاحظة", "Note") <span class="form-hint">@Ui.Text("اختيارية، تُطبع تحت نص السؤال", "optional, printed under the question text")</span>
+        </label>
         <textarea id="@FieldId("note")" class="form-control" rows="1" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxNoteLength"
                   @bind="Question.Note" @bind:after="() => Edited(nameof(ExamQuestion.Note))"></textarea>
         <FieldIssues Issues="IssuesFor(visible, nameof(ExamQuestion.Note))" Id="@FieldId("note-issues")"/>
@@ -183,12 +188,15 @@
     private string? DescribedBy(List<ValidationIssue> visible, string field, string issuesName) =>
         visible.Any(issue => issue.Field == field) ? FieldId(issuesName) : null;
 
-    private static string SectionLabel(int index, ExamSection section)
+    private string SectionLabel(int index, ExamSection section)
     {
         var title = section.Title.Trim();
         if (title.Length > SectionLabelTitleLength)
             title = title[..SectionLabelTitleLength] + "…";
-        return title.Length == 0 ? $"القسم {index + 1}" : $"القسم {index + 1}: {title}";
+
+        var name = Ui.Text($"القسم {index + 1}", $"Section {index + 1}");
+        // The title is in the exam's language, which may run the other way; <option> can't hold <bdi>.
+        return title.Length == 0 ? name : $"{name}: {ExamContent.Isolate(title)}";
     }
 
     private void Touch(string key) => touched.Add(key);
@@ -242,7 +250,7 @@
 
     private async Task DeleteAsync()
     {
-        if (!await Browser.ConfirmAsync($"حذف السؤال {Number} نهائيًا؟"))
+        if (!await Browser.ConfirmAsync(Ui.Text($"حذف السؤال {Number} نهائيًا؟", $"Delete question {Number} for good?")))
             return;
 
         var questions = Section.Questions;

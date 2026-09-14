@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="@Ui.Lang" dir="@Ui.Dir">
 
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <base href="/"/>
     <ResourcePreloader/>
-    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.rtl.min.css"]"/>
+    <link rel="stylesheet" href="@Assets[BootstrapStylesheet]"/>
     <link rel="stylesheet" href="@Assets["app.css"]"/>
     <link rel="stylesheet" href="@Assets["ExamTemplate.styles.css"]"/>
     <ImportMap/>
@@ -18,9 +18,9 @@
 @* Shown until the interactive app renders its layout (pages aren't prerendered). *@
 <div class="app-loading" role="status">
     <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-    جارٍ تحميل التطبيق…
+    @Ui.Text("جارٍ تحميل التطبيق…", "Loading the app…")
 </div>
-<Routes @rendermode="PageRenderMode"/>
+<Routes @rendermode="PageRenderMode" Language="@language"/>
 <ReconnectModal/>
 <script src="@Assets["_framework/blazor.web.js"]"></script>
 </body>
@@ -31,9 +31,24 @@
     // Not prerendered: pages restore the draft from the browser's localStorage, which the server can't read.
     private static readonly IComponentRenderMode InteractiveWithoutPrerendering = new InteractiveServerRenderMode(prerender: false);
 
+    private UiLanguage language;
+
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
     // Pages marked [ExcludeFromInteractiveRouting] (the error page) stay static.
     private IComponentRenderMode? PageRenderMode =>
         HttpContext.AcceptsInteractiveRouting() ? InteractiveWithoutPrerendering : null;
+
+    // Bootstrap's utilities (ms-*, btn-close, form-select) are physical, so each direction has its own build.
+    private string BootstrapStylesheet => Ui.IsEnglish
+        ? "lib/bootstrap/dist/css/bootstrap.min.css"
+        : "lib/bootstrap/dist/css/bootstrap.rtl.min.css";
+
+    // The static parts of this request (reconnect dialog, error page) use this request's scope; the interactive
+    // circuit has its own and gets the language through Routes.
+    protected override void OnInitialized()
+    {
+        language = UiLanguageCookie.Read(HttpContext);
+        Ui.Use(language);
+    }
 }

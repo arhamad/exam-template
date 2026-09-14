@@ -1,7 +1,8 @@
 @inherits DraftSubscriber
 
-@* Asks before the tab is closed or reloaded while the latest edits aren't in localStorage yet. *@
-<NavigationLock ConfirmExternalNavigation="@Draft.HasUnsavedChanges"/>
+@* Asks before the tab is closed or reloaded while the latest edits aren't in localStorage yet,
+   except when the language switch reloads the page itself. *@
+<NavigationLock ConfirmExternalNavigation="@(Draft.HasUnsavedChanges && !Draft.LeavePromptSuppressed)"/>
 
 @switch (Draft.SaveStatus)
 {
@@ -9,22 +10,22 @@
     case DraftSaveStatus.Saving:
         <span class="save-status is-saving">
             <span class="spinner-grow spinner-grow-sm" aria-hidden="true"></span>
-            جارٍ الحفظ…
+            @Ui.Text("جارٍ الحفظ…", "Saving…")
         </span>
         break;
 
     case DraftSaveStatus.Saved:
         <span class="save-status is-saved">
             <Icon Name="check"/>
-            تم الحفظ تلقائيًا
+            @Ui.Text("تم الحفظ تلقائيًا", "Saved automatically")
         </span>
         break;
 
     case DraftSaveStatus.Failed:
         <span class="save-status is-failed" role="alert">
             <Icon Name="error"/>
-            تعذّر الحفظ في المتصفح
-            <button type="button" class="btn btn-link btn-sm p-0 align-baseline" @onclick="Draft.SaveNowAsync">إعادة المحاولة</button>
+            @Ui.Text("تعذّر الحفظ في المتصفح", "Couldn't save in the browser")
+            <button type="button" class="btn btn-link btn-sm p-0 align-baseline" @onclick="Draft.SaveNowAsync">@Ui.Text("إعادة المحاولة", "Try again")</button>
         </span>
         break;
 }

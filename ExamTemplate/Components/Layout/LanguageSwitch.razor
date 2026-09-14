@@ -1,0 +1,62 @@
+@* Switches the interface between Arabic and English by saving the draft, writing the language cookie and reloading.
+   The exam's own language is set on the details page. *@
+@inject ExamDraftState Draft
+@inject BrowserInterop Browser
+@inject NavigationManager Navigation
+
+@* Needs a live circuit, so the static error page doesn't show it. *@
+@if (RendererInfo.IsInteractive)
+{
+    <button type="button" class="btn btn-outline-secondary btn-sm language-switch" disabled="@switching"
+            title="@Ui.Text("عرض الواجهة بالإنجليزية", "Show the interface in Arabic")" @onclick="SwitchAsync">
+        <span lang="@UiLanguageCookie.Code(Target)">@(Target == UiLanguage.English ? "English" : "العربية")</span>
+    </button>
+}
+
+@code {
+    private bool switching;
+    private bool reloadPending;
+
+    private UiLanguage Target => Ui.IsEnglish ? UiLanguage.Arabic : UiLanguage.English;
+
+    private async Task SwitchAsync()
+    {
+        switching = true;
+        try
+        {
+            // The reload starts a new circuit that restores the draft from localStorage, so save the last edits first.
+            if (Draft.HasUnsavedChanges)
+                await Draft.SaveNowAsync();
+
+            if (Draft.HasUnsavedChanges && !await Browser.ConfirmAsync(Ui.Text(
+                    "تعذّر حفظ آخر التعديلات في هذا المتصفح، وستضيع عند تغيير لغة الواجهة. هل تريد المتابعة؟",
+                    "Your latest changes couldn't be saved in this browser and will be lost when the interface language changes. Continue?")))
+            {
+                return;
+            }
+
+            await Browser.SetUiLanguageAsync(Target);
+            Draft.SuppressLeavePrompt();
+            reloadPending = true;
+        }
+        catch (JSDisconnectedException)
+        {
+            // The browser is gone; nothing to switch.
+        }
+        finally
+        {
+            switching = reloadPending;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!reloadPending)
+            return;
+
+        // Reload only after this render reached the browser, so NavigationLock has removed the "leave site?" prompt.
+        reloadPending = false;
+        await Task.Yield();
+        Navigation.Refresh(forceReload: true);
+    }
+}

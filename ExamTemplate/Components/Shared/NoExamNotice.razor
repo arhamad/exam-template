@@ -1,13 +1,16 @@
 @inject ExamDraftState Draft
 
 <div class="empty-state">
-    <h2 class="h5">لا يوجد امتحان مفتوح</h2>
+    <h2 class="h5">@Ui.Text("لا يوجد امتحان مفتوح", "No exam is open")</h2>
     @if (Draft.RestoreError is { } error)
     {
         <div class="alert alert-warning" role="alert">@error</div>
     }
-    <p class="text-body-secondary">أنشئ امتحانًا جديدًا، أو استورد ملف امتحان، أو افتح النموذج التجريبي من الصفحة الرئيسية.</p>
+    <p class="text-body-secondary">
+        @Ui.Text("أنشئ امتحانًا جديدًا، أو استورد ملف امتحان، أو افتح النموذج التجريبي من الصفحة الرئيسية.",
+            "Create a new exam, import an exam file, or open a sample exam from the home page.")
+    </p>
     <a class="btn btn-primary" href="">
-        <Icon Name="home"/> الذهاب إلى الصفحة الرئيسية
+        <Icon Name="home"/> @Ui.Text("الذهاب إلى الصفحة الرئيسية", "Go to the home page")
     </a>
 </div>

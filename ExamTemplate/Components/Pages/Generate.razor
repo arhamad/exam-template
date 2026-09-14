@@ -5,18 +5,21 @@
 @inject IExamDocumentService Documents
 @inject ILogger<Generate> Logger
 
-<PageTitle>التوليد والتصدير – مولّد الامتحانات</PageTitle>
+<PageTitle>@Ui.Text("التوليد والتصدير – مولّد الامتحانات", "Generate and export – Exam Generator")</PageTitle>
 
 <header class="page-header">
-    <h1>التوليد والتصدير</h1>
-    <p class="page-lead">راجع المشكلات، واختر عدد النماذج، ثم نزّل نسخ الطلاب ومفاتيح الإجابة أو عاينها.</p>
+    <h1>@Ui.Text("التوليد والتصدير", "Generate and export")</h1>
+    <p class="page-lead">
+        @Ui.Text("راجع المشكلات، واختر عدد النماذج، ثم نزّل نسخ الطلاب ومفاتيح الإجابة أو عاينها.",
+            "Review the issues, choose the number of versions, then download or preview the student copies and answer keys.")
+    </p>
 </header>
 
 @if (IsLoading)
 {
     <div class="loading-state" role="status">
         <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-        جارٍ تحميل المسودة…
+        @Ui.Text("جارٍ تحميل المسودة…", "Loading the draft…")
     </div>
 }
 else if (Exam is not { } exam)
@@ -28,21 +31,24 @@ else
     var validation = Draft.Validation;
     var canGenerate = !validation.HasErrors;
     var isBusy = busyJob is not null;
+    var wording = PaperWording.For(exam.Language);
 
     <section class="panel" aria-labelledby="check-title">
-        <h2 id="check-title" class="panel-title">مراجعة الامتحان</h2>
+        <h2 id="check-title" class="panel-title">@Ui.Text("مراجعة الامتحان", "Exam review")</h2>
         @if (validation.Report.Issues.Count == 0)
         {
-            <p class="check-ok"><Icon Name="check"/> لا توجد مشكلات، والامتحان جاهز للتوليد.</p>
+            <p class="check-ok"><Icon Name="check"/> @Ui.Text("لا توجد مشكلات، والامتحان جاهز للتوليد.", "There are no issues, and the exam is ready to generate.")</p>
         }
         else
         {
             <p class="check-summary">
-                <span class="check-counts">الأخطاء: @validation.ErrorCount، التنبيهات: @validation.WarningCount</span>
+                <span class="check-counts">
+                    @Ui.Join([$"{Ui.Text("الأخطاء", "Errors")}: {validation.ErrorCount}", $"{Ui.Text("التنبيهات", "Warnings")}: {validation.WarningCount}"])
+                </span>
                 <span>
                     @(canGenerate
-                        ? "التنبيهات لا تمنع التوليد، لكن يُستحسن مراجعتها."
-                        : "يجب إصلاح الأخطاء قبل التوليد. اضغط على أي مشكلة للانتقال إليها.")
+                        ? Ui.Text("التنبيهات لا تمنع التوليد، لكن يُستحسن مراجعتها.", "Warnings don't block generating, but they are worth a look.")
+                        : Ui.Text("يجب إصلاح الأخطاء قبل التوليد. اضغط على أي مشكلة للانتقال إليها.", "Fix the errors before generating. Select an issue to go to it."))
                 </span>
             </p>
             <ul class="issue-list">
@@ -51,19 +57,19 @@ else
                     var isError = issue.Severity == IssueSeverity.Error;
                     <li class="@(isError ? "is-error" : "is-warning")">
                         <Icon Name="@(isError ? "error" : "warning")"/>
-                        <span class="visually-hidden">@(isError ? "خطأ: " : "تنبيه: ")</span>
+                        <span class="visually-hidden">@(isError ? Ui.Text("خطأ: ", "Error: ") : Ui.Text("تنبيه: ", "Warning: "))</span>
                         @if (LocalTarget(issue) is { } localId)
                         {
                             <a href="@($"exam/generate#{localId}")" @onclick="() => Browser.FocusElementAsync(localId, true)"
-                               @onclick:preventDefault>@issue.Message.Arabic</a>
+                               @onclick:preventDefault>@Ui.Text(issue.Message)</a>
                         }
                         else if (LinkFor(issue) is { } href)
                         {
-                            <a href="@href">@issue.Message.Arabic</a>
+                            <a href="@href">@Ui.Text(issue.Message)</a>
                         }
                         else
                         {
-                            <span>@issue.Message.Arabic</span>
+                            <span>@Ui.Text(issue.Message)</span>
                         }
                     </li>
                 }
@@ -72,20 +78,23 @@ else
     </section>
 
     <section class="panel" aria-labelledby="versions-title">
-        <h2 id="versions-title" class="panel-title">النماذج</h2>
+        <h2 id="versions-title" class="panel-title">@Ui.Text("النماذج", "Versions")</h2>
         <p class="panel-lead">
-            يبقى النموذج (@PaperWording.For(exam.Language).VersionLetter(0)) بالترتيب الأصلي، وفي بقية النماذج تُخلط الأسئلة داخل كل قسم وتُخلط خيارات أسئلة الاختيار من متعدد.
+            @* Letters follow the exam's language, so they are isolated from the interface text around them. *@
+            @Ui.Text("يبقى النموذج (", "Version (")<bdi>@wording.VersionLetter(0)</bdi>@Ui.Text(
+                ") بالترتيب الأصلي، وفي بقية النماذج تُخلط الأسئلة داخل كل قسم وتُخلط خيارات أسئلة الاختيار من متعدد.",
+                ") keeps the original order. The other versions shuffle the questions within each section and the multiple-choice options.")
         </p>
 
         <fieldset id="field-VersionCount" class="version-count focus-target" tabindex="-1">
-            <legend class="form-label">عدد النماذج</legend>
+            <legend class="form-label">@Ui.Text("عدد النماذج", "Number of versions")</legend>
             <div class="version-options">
                 @for (var count = ExamLimits.MinVersions; count <= ExamLimits.MaxVersions; count++)
                 {
                     var value = count;
                     <input type="radio" class="btn-check" name="version-count" id="@($"versions-{value}")" autocomplete="off"
                            checked="@(exam.VersionCount == value)" disabled="@isBusy" @onchange="() => SetVersionCountAsync(value)"/>
-                    <label class="btn btn-outline-primary" for="@($"versions-{value}")">@VersionCountLabel(value, exam.Language)</label>
+                    <label class="btn btn-outline-primary" for="@($"versions-{value}")">@VersionCountText(value) (<bdi>@VersionLetters(value, wording)</bdi>)</label>
                 }
             </div>
             <FieldIssues Issues="validation.ForField(nameof(ExamDefinition.VersionCount))" Id="issues-VersionCount"/>
@@ -93,69 +102,72 @@ else
 
         <div id="field-ShuffleSeed" class="shuffle-row focus-target" tabindex="-1">
             <div>
-                <span class="form-label d-block mb-0">رقم الخلط</span>
+                <span class="form-label d-block mb-0">@Ui.Text("رقم الخلط", "Shuffle number")</span>
                 <span class="seed-value" dir="ltr">@exam.ShuffleSeed</span>
-                <div class="form-hint">يُحفظ مع الامتحان، فتُولَّد النماذج نفسها في كل مرة إلى أن تعيد الخلط.</div>
+                <div class="form-hint">
+                    @Ui.Text("يُحفظ مع الامتحان، فتُولَّد النماذج نفسها في كل مرة إلى أن تعيد الخلط.",
+                        "Saved with the exam, so the same versions are generated every time until you reshuffle.")
+                </div>
             </div>
             <button type="button" class="btn btn-outline-secondary" disabled="@(isBusy || exam.VersionCount < 2)"
                     @onclick="ReshuffleAsync">
-                <Icon Name="shuffle"/> إعادة خلط
+                <Icon Name="shuffle"/> @Ui.Text("إعادة خلط", "Reshuffle")
             </button>
         </div>
         <FieldIssues Issues="validation.ForField(nameof(ExamDefinition.ShuffleSeed))" Id="issues-ShuffleSeed"/>
     </section>
 
     <section class="panel" aria-labelledby="files-title">
-        <h2 id="files-title" class="panel-title">الملفات</h2>
+        <h2 id="files-title" class="panel-title">@Ui.Text("الملفات", "Files")</h2>
 
-        <div class="visually-hidden" role="status">@(isBusy ? "جارٍ إنشاء الملف…" : "")</div>
+        <div class="visually-hidden" role="status">@(isBusy ? Ui.Text("جارٍ إنشاء الملف…", "Creating the file…") : "")</div>
 
         @if (errorMessage is not null)
         {
             <div id="generate-error" class="alert alert-danger alert-dismissible generate-error" role="alert" tabindex="-1">
                 <Icon Name="error"/>
                 <span>@errorMessage</span>
-                <button type="button" class="btn-close" aria-label="إغلاق" @onclick="() => errorMessage = null"></button>
+                <button type="button" class="btn-close" aria-label="@Ui.Text("إغلاق", "Close")" @onclick="() => errorMessage = null"></button>
             </div>
         }
 
         @if (!canGenerate)
         {
-            <p class="generate-blocked"><Icon Name="error"/> أصلح الأخطاء المذكورة أعلاه لتفعيل التوليد.</p>
+            <p class="generate-blocked"><Icon Name="error"/> @Ui.Text("أصلح الأخطاء المذكورة أعلاه لتفعيل التوليد.", "Fix the errors listed above to turn on generating.")</p>
         }
 
         <div class="paper-list">
             @for (var index = 0; index < exam.VersionCount; index++)
             {
                 var versionIndex = index;
-                var letter = PaperWording.For(exam.Language).VersionLetter(versionIndex);
+                var letter = wording.VersionLetter(versionIndex);
                 <div class="paper-row">
                     <div class="paper-version">
                         <span class="version-letter" aria-hidden="true">@letter</span>
-                        <span>النموذج @letter</span>
+                        <span>@Ui.Text("النموذج", "Version") <bdi>@letter</bdi></span>
                     </div>
                     @foreach (var kind in Kinds)
                     {
-                        var paperName = $"{KindLabel(kind)} للنموذج {letter}";
+                        var paperName = PaperName(kind, letter);
                         <div class="paper-kind" role="group" aria-label="@paperName">
                             <span class="paper-kind-label">
                                 <Icon Name="@(kind == PaperKind.Student ? "file" : "key")"/> @KindLabel(kind)
                             </span>
                             <div class="paper-actions">
                                 <button type="button" class="btn btn-sm btn-primary" disabled="@(!canGenerate || isBusy)"
-                                        aria-label="@($"تنزيل {paperName} بصيغة PDF")"
+                                        aria-label="@Ui.Text($"تنزيل {paperName} بصيغة PDF", $"Download the {paperName} as PDF")"
                                         @onclick="() => DownloadPaperAsync(versionIndex, kind, PaperFormat.Pdf)">
                                     @JobIcon(JobKey(versionIndex, kind, "pdf"), "download") PDF
                                 </button>
                                 <button type="button" class="btn btn-sm btn-outline-primary" disabled="@(!canGenerate || isBusy)"
-                                        aria-label="@($"تنزيل {paperName} بصيغة Word")"
+                                        aria-label="@Ui.Text($"تنزيل {paperName} بصيغة Word", $"Download the {paperName} as Word")"
                                         @onclick="() => DownloadPaperAsync(versionIndex, kind, PaperFormat.Word)">
                                     @JobIcon(JobKey(versionIndex, kind, "word"), "download") Word
                                 </button>
                                 <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!canGenerate || isBusy)"
-                                        aria-label="@($"معاينة {paperName}")"
+                                        aria-label="@Ui.Text($"معاينة {paperName}", $"Preview the {paperName}")"
                                         @onclick="() => PreviewAsync(versionIndex, kind)">
-                                    @JobIcon(JobKey(versionIndex, kind, "preview"), "eye") معاينة
+                                    @JobIcon(JobKey(versionIndex, kind, "preview"), "eye") @Ui.Text("معاينة", "Preview")
                                 </button>
                             </div>
                         </div>
@@ -166,43 +178,41 @@ else
 
         <div class="bundle-actions">
             <button type="button" class="btn btn-primary" disabled="@(!canGenerate || isBusy)" @onclick="DownloadBundleAsync">
-                @JobIcon("bundle", "download") تنزيل الكل (ZIP)
+                @JobIcon("bundle", "download") @Ui.Text("تنزيل الكل (ZIP)", "Download all (ZIP)")
             </button>
             <button type="button" class="btn btn-outline-secondary" disabled="@isBusy" @onclick="ExportJsonAsync">
-                @JobIcon("json", "download") تصدير ملف الامتحان (JSON)
+                @JobIcon("json", "download") @Ui.Text("تصدير ملف الامتحان (JSON)", "Export exam file (JSON)")
             </button>
         </div>
         <p class="form-hint mb-0">
-            يضم ملف ZIP نسخ الطلاب ومفاتيح الإجابة لكل النماذج بصيغتي Word وPDF مع ملف الامتحان.
-            أما ملف JSON فيحفظ الامتحان لتعديله لاحقًا أو نقله إلى جهاز آخر، ويمكن تصديره حتى مع وجود أخطاء.
+            @Ui.Text("يضم ملف ZIP نسخ الطلاب ومفاتيح الإجابة لكل النماذج بصيغتي Word وPDF مع ملف الامتحان. أما ملف JSON فيحفظ الامتحان لتعديله لاحقًا أو نقله إلى جهاز آخر، ويمكن تصديره حتى مع وجود أخطاء.",
+                "The ZIP file holds the student copies and answer keys of every version as Word and PDF, with the exam file. The JSON file keeps the exam so you can edit it later or move it to another computer, and can be exported even when the exam has errors.")
         </p>
     </section>
 
     @if (preview is not null)
     {
+        var previewTitle = Ui.Text($"معاينة {preview.Name}", $"Preview of the {preview.Name}");
         <section id="preview" class="panel preview-panel focus-target" tabindex="-1" aria-labelledby="preview-title">
             <div class="preview-header">
-                <h2 id="preview-title" class="panel-title mb-0">معاينة @preview.Title</h2>
+                <h2 id="preview-title" class="panel-title mb-0">@previewTitle</h2>
                 <div class="button-row">
                     <a class="btn btn-sm btn-outline-secondary" href="@preview.Url" target="_blank" rel="noopener">
-                        <Icon Name="external"/> فتح في تبويب جديد
+                        <Icon Name="external"/> @Ui.Text("فتح في تبويب جديد", "Open in a new tab")
                     </a>
                     <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ClosePreviewAsync">
-                        <Icon Name="close"/> إغلاق المعاينة
+                        <Icon Name="close"/> @Ui.Text("إغلاق المعاينة", "Close preview")
                     </button>
                 </div>
             </div>
-            <iframe class="preview-frame" src="@preview.Url" title="@($"معاينة {preview.Title}")"></iframe>
+            <iframe class="preview-frame" src="@preview.Url" title="@previewTitle"></iframe>
         </section>
     }
 
-    <StepFooter PreviousHref="exam/questions" PreviousText="الأسئلة"/>
+    <StepFooter PreviousHref="exam/questions" PreviousText="@Ui.Text("الأسئلة", "Questions")"/>
 }
 
 @code {
-    private const string UnexpectedErrorMessage =
-        "تعذّر إنشاء الملف بسبب خطأ غير متوقع. حاول مرة أخرى، وإن تكرر الخطأ فصدّر ملف الامتحان (JSON) وأبلغ الدعم الفني.";
-
     private static readonly PaperKind[] Kinds = [PaperKind.Student, PaperKind.AnswerKey];
 
     private string? busyJob;
@@ -216,7 +226,12 @@ else
         Word,
     }
 
-    private sealed record Preview(string Url, string Title);
+    /// <param name="Name">The paper's name in the interface language, e.g. "answer key for version B".</param>
+    private sealed record Preview(string Url, string Name);
+
+    private string UnexpectedErrorMessage => Ui.Text(
+        "تعذّر إنشاء الملف بسبب خطأ غير متوقع. حاول مرة أخرى، وإن تكرر الخطأ فصدّر ملف الامتحان (JSON) وأبلغ الدعم الفني.",
+        "The file couldn't be created because of an unexpected error. Try again, and if it happens again, export the exam file (JSON) and tell technical support.");
 
     protected override async Task OnInitializedAsync()
     {
@@ -233,20 +248,27 @@ else
         await ClosePreviewAsync();
     }
 
-    private static string KindLabel(PaperKind kind) => kind == PaperKind.Student ? "نسخة الطالب" : "مفتاح الإجابة";
+    private string KindLabel(PaperKind kind) =>
+        kind == PaperKind.Student ? Ui.Text("نسخة الطالب", "Student copy") : Ui.Text("مفتاح الإجابة", "Answer key");
+
+    // Used inside sentences: «مفتاح الإجابة للنموذج ب» or "answer key for version B".
+    private string PaperName(PaperKind kind, string letter) => Ui.Text(
+        $"{KindLabel(kind)} للنموذج {letter}",
+        $"{(kind == PaperKind.Student ? "student copy" : "answer key")} for version {letter}");
 
     private static string JobKey(int versionIndex, PaperKind kind, string action) => $"{versionIndex}-{kind}-{action}";
 
-    private static string VersionCountLabel(int count, ExamLanguage language)
-    {
-        var letters = string.Join("، ", Enumerable.Range(0, count).Select(PaperWording.For(language).VersionLetter));
-        return count switch
+    private string VersionCountText(int count) => Ui.IsEnglish
+        ? count == 1 ? "1 version" : $"{count} versions"
+        : count switch
         {
-            1 => $"نموذج واحد ({letters})",
-            2 => $"نموذجان ({letters})",
-            _ => $"{count} نماذج ({letters})",
+            1 => "نموذج واحد",
+            2 => "نموذجان",
+            _ => $"{count} نماذج",
         };
-    }
+
+    private string VersionLetters(int count, PaperWording wording) =>
+        Ui.Join(Enumerable.Range(0, count).Select(wording.VersionLetter));
 
     /// <summary>Editor location of an issue, as a deep link that focuses the offending card or field.</summary>
     private static string? LinkFor(ValidationIssue issue) => issue switch
@@ -317,7 +339,7 @@ else
                 return;
             }
 
-            preview = new Preview(url, $"{KindLabel(kind)} للنموذج {PaperWording.For(snapshot.Language).VersionLetter(versionIndex)}");
+            preview = new Preview(url, PaperName(kind, PaperWording.For(snapshot.Language).VersionLetter(versionIndex)));
             FocusAfterRender("preview");
         });
 
@@ -338,7 +360,7 @@ else
             await Browser.DownloadAsync(new RenderedFile(ExamFileNames.Json(exam), RenderedFile.JsonContentType, Encoding.UTF8.GetBytes(json)));
         });
 
-    /// <summary>Runs one generation job at a time and turns failures into an Arabic message.</summary>
+    /// <summary>Runs one generation job at a time and turns failures into a message in the interface language.</summary>
     private async Task RunJobAsync(string job, Func<Task> work)
     {
         if (busyJob is not null || Exam is null)
@@ -358,12 +380,12 @@ else
         {
             Logger.LogInformation("Generation {Job} stopped by {ErrorCount} validation errors.", job,
                 exception.Report.Issues.Count(issue => issue.Severity == IssueSeverity.Error));
-            ShowError(exception.UserMessage.Arabic);
+            ShowError(Ui.Text(exception.UserMessage));
         }
         catch (ExamUserException exception)
         {
             Logger.LogError(exception, "Generation {Job} failed.", job);
-            ShowError(exception.UserMessage.Arabic);
+            ShowError(Ui.Text(exception.UserMessage));
         }
         catch (Exception exception)
         {

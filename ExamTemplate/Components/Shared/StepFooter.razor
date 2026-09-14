@@ -1,14 +1,14 @@
-<nav class="step-footer" aria-label="خطوات إعداد الامتحان">
+<nav class="step-footer" aria-label="@Ui.Text("خطوات إعداد الامتحان", "Exam setup steps")">
     @if (PreviousHref is not null)
     {
         <a class="btn btn-outline-secondary" href="@PreviousHref">
-            <span aria-hidden="true">→</span> السابق: @PreviousText
+            <span aria-hidden="true">@(Ui.IsEnglish ? "←" : "→")</span> @Ui.Text("السابق:", "Previous:") @PreviousText
         </a>
     }
     @if (NextHref is not null)
     {
         <a class="btn btn-primary ms-auto" href="@NextHref">
-            التالي: @NextText <span aria-hidden="true">←</span>
+            @Ui.Text("التالي:", "Next:") @NextText <span aria-hidden="true">@(Ui.IsEnglish ? "→" : "←")</span>
         </a>
     }
 </nav>

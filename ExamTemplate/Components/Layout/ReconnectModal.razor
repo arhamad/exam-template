@@ -7,25 +7,26 @@
             <div></div>
         </div>
         <p class="components-reconnect-first-attempt-visible">
-            انقطع الاتصال بالخادم، جارٍ إعادة الاتصال…
+            @Ui.Text("انقطع الاتصال بالخادم، جارٍ إعادة الاتصال…", "Lost the connection to the server. Reconnecting…")
         </p>
         <p class="components-reconnect-repeated-attempt-visible">
-            تعذّرت إعادة الاتصال… ستُعاد المحاولة خلال <span id="components-seconds-to-next-attempt"></span> ثانية.
+            @Ui.Text("تعذّرت إعادة الاتصال… ستُعاد المحاولة خلال", "Couldn't reconnect… Trying again in")
+            <span id="components-seconds-to-next-attempt"></span> @Ui.Text("ثانية.", "seconds.")
         </p>
         <p class="components-reconnect-failed-visible">
-            تعذّرت إعادة الاتصال.<br/>أعد المحاولة أو أعد تحميل الصفحة.
+            @Ui.Text("تعذّرت إعادة الاتصال.", "Couldn't reconnect.")<br/>@Ui.Text("أعد المحاولة أو أعد تحميل الصفحة.", "Try again or reload the page.")
         </p>
         <button id="components-reconnect-button" class="components-reconnect-failed-visible">
-            إعادة المحاولة
+            @Ui.Text("إعادة المحاولة", "Try again")
         </button>
         <p class="components-pause-visible">
-            أوقف الخادم الجلسة مؤقتًا.
+            @Ui.Text("أوقف الخادم الجلسة مؤقتًا.", "The server paused the session.")
         </p>
         <p class="components-resume-failed-visible">
-            تعذّر استئناف الجلسة.<br/>أعد المحاولة أو أعد تحميل الصفحة.
+            @Ui.Text("تعذّر استئناف الجلسة.", "Couldn't resume the session.")<br/>@Ui.Text("أعد المحاولة أو أعد تحميل الصفحة.", "Try again or reload the page.")
         </p>
         <button id="components-resume-button" class="components-pause-visible components-resume-failed-visible">
-            استئناف
+            @Ui.Text("استئناف", "Resume")
         </button>
     </div>
 </dialog>

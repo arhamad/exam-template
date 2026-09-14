@@ -1,7 +1,10 @@
 @inject BrowserInterop Browser
 
 <fieldset class="options-editor">
-    <legend class="form-label">الخيارات <span class="form-hint">حدّد الإجابة الصحيحة بالدائرة المجاورة لها</span></legend>
+    <legend class="form-label">
+        @Ui.Text("الخيارات", "Options")
+        <span class="form-hint">@Ui.Text("حدّد الإجابة الصحيحة بالدائرة المجاورة لها", "Mark the correct answer with the circle next to it")</span>
+    </legend>
 
     <ol class="option-list">
         @for (var index = 0; index < Question.Options.Count; index++)
@@ -13,20 +16,20 @@
             <li @key="option.Id" class="option-row @(option.IsCorrect ? "is-correct" : null)">
                 <input id="@($"o-{option.Id}-correct")" class="form-check-input option-radio" type="radio"
                        name="@($"correct-{Question.Id}")" checked="@option.IsCorrect"
-                       aria-label="@($"الخيار ({label}) هو الإجابة الصحيحة")"
+                       aria-label="@Ui.Text($"الخيار ({label}) هو الإجابة الصحيحة", $"Option ({label}) is the correct answer")"
                        @onchange="() => SetCorrectAsync(option)"/>
                 <label class="option-label" for="@($"o-{option.Id}-correct")" aria-hidden="true">@label</label>
                 <div class="option-text">
                     <input id="@($"o-{option.Id}-text")" class="form-control" dir="@ExamContent.Dir(Language)" lang="@ExamContent.Lang(Language)" maxlength="@ExamLimits.MaxOptionTextLength"
-                           aria-label="@($"نص الخيار ({label})")"
+                           aria-label="@Ui.Text($"نص الخيار ({label})", $"Text of option ({label})")"
                            aria-invalid="@(hasError ? "true" : null)"
                            aria-describedby="@(optionIssues.Count > 0 ? $"o-{option.Id}-issues" : null)"
                            @bind="option.Text" @bind:after="() => OnEdited.InvokeAsync(OptionTextKey(option.Id))"
                            @onblur="() => OnTouched.InvokeAsync(OptionTextKey(option.Id))"/>
                     <FieldIssues Issues="optionIssues" Id="@($"o-{option.Id}-issues")"/>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-danger icon-button" title="حذف الخيار"
-                        aria-label="@($"حذف الخيار ({label})")"
+                <button type="button" class="btn btn-sm btn-outline-danger icon-button" title="@Ui.Text("حذف الخيار", "Delete option")"
+                        aria-label="@Ui.Text($"حذف الخيار ({label})", $"Delete option ({label})")"
                         disabled="@(Question.Options.Count <= ExamLimits.MinOptions)" @onclick="() => RemoveAsync(option)">
                     <Icon Name="trash"/>
                 </button>
@@ -39,12 +42,14 @@
     <div class="options-footer">
         <button id="@AddButtonId" type="button" class="btn btn-sm btn-outline-primary"
                 disabled="@(Question.Options.Count >= ExamLimits.MaxOptions)" @onclick="AddAsync">
-            <Icon Name="plus"/> إضافة خيار
+            <Icon Name="plus"/> @Ui.Text("إضافة خيار", "Add option")
         </button>
         <div class="form-check form-switch mb-0">
             <input id="@($"q-{Question.Id}-keep-order")" class="form-check-input" type="checkbox" role="switch"
                    @bind="Question.KeepOptionOrder" @bind:after="() => OnEdited.InvokeAsync(OptionsKey)"/>
-            <label class="form-check-label" for="@($"q-{Question.Id}-keep-order")">الحفاظ على ترتيب الخيارات عند الخلط</label>
+            <label class="form-check-label" for="@($"q-{Question.Id}-keep-order")">
+                @Ui.Text("الحفاظ على ترتيب الخيارات عند الخلط", "Keep option order when shuffling")
+            </label>
         </div>
     </div>
 </fieldset>

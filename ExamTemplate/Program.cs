@@ -10,9 +10,10 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddExamDocuments();
 
-// One per circuit: the exam being edited and the browser it is saved in.
+// One per circuit: the exam being edited, the browser it is saved in and the interface language.
 builder.Services.AddScoped<BrowserInterop>();
 builder.Services.AddScoped<ExamDraftState>();
+builder.Services.AddScoped<UiText>();
 
 var app = builder.Build();
 

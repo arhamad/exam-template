@@ -8,42 +8,47 @@
     var defaults = ExamDefaults.For(Exam.Language);
     var dir = ExamContent.Dir(Exam.Language);
     var lang = ExamContent.Lang(Exam.Language);
+    var number = Index + 1;
 }
 
 <section id="@SectionId" class="exam-section focus-target" tabindex="-1" aria-labelledby="@($"{SectionId}-heading")">
     <header class="section-header">
         <div class="section-heading">
-            <h2 id="@($"{SectionId}-heading")" class="section-title">القسم @(Index + 1)</h2>
+            <h2 id="@($"{SectionId}-heading")" class="section-title">@Ui.Text("القسم", "Section") @number</h2>
             <SectionSummary Section="Section"/>
         </div>
-        <div class="section-actions" role="group" aria-label="@($"إجراءات القسم {Index + 1}")">
+        <div class="section-actions" role="group" aria-label="@Ui.Text($"إجراءات القسم {number}", $"Section {number} actions")">
             <button id="@($"{SectionId}-up")" type="button" class="btn btn-sm btn-outline-secondary icon-button"
-                    title="نقل القسم للأعلى" aria-label="@($"نقل القسم {Index + 1} للأعلى")" disabled="@isFirst"
+                    title="@Ui.Text("نقل القسم للأعلى", "Move section up")" aria-label="@Ui.Text($"نقل القسم {number} للأعلى", $"Move section {number} up")" disabled="@isFirst"
                     @onclick="() => MoveAsync(-1)">
                 <Icon Name="up"/>
             </button>
             <button id="@($"{SectionId}-down")" type="button" class="btn btn-sm btn-outline-secondary icon-button"
-                    title="نقل القسم للأسفل" aria-label="@($"نقل القسم {Index + 1} للأسفل")" disabled="@isLast"
+                    title="@Ui.Text("نقل القسم للأسفل", "Move section down")" aria-label="@Ui.Text($"نقل القسم {number} للأسفل", $"Move section {number} down")" disabled="@isLast"
                     @onclick="() => MoveAsync(1)">
                 <Icon Name="down"/>
             </button>
-            <button type="button" class="btn btn-sm btn-outline-danger" aria-label="@($"حذف القسم {Index + 1}")"
+            <button type="button" class="btn btn-sm btn-outline-danger" aria-label="@Ui.Text($"حذف القسم {number}", $"Delete section {number}")"
                     @onclick="DeleteAsync">
-                <Icon Name="trash"/> حذف القسم
+                <Icon Name="trash"/> @Ui.Text("حذف القسم", "Delete section")
             </button>
         </div>
     </header>
 
     <div class="row g-3 section-fields">
         <div class="col-md-6">
-            <label class="form-label" for="@($"{SectionId}-title-input")">عنوان القسم <span class="form-hint">اختياري</span></label>
+            <label class="form-label" for="@($"{SectionId}-title-input")">
+                @Ui.Text("عنوان القسم", "Section title") <span class="form-hint">@Ui.Text("اختياري", "optional")</span>
+            </label>
             <input id="@($"{SectionId}-title-input")" class="form-control" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxSectionTitleLength"
                    placeholder="@defaults.SectionTitlePlaceholder"
                    @bind="Section.Title" @bind:after="() => Edited(nameof(ExamSection.Title))"/>
             <FieldIssues Issues="IssuesFor(nameof(ExamSection.Title))" Id="@($"{SectionId}-title-issues")"/>
         </div>
         <div class="col-md-6">
-            <label class="form-label" for="@($"{SectionId}-instruction")">تعليمات القسم <span class="form-hint">اختيارية</span></label>
+            <label class="form-label" for="@($"{SectionId}-instruction")">
+                @Ui.Text("تعليمات القسم", "Section instructions") <span class="form-hint">@Ui.Text("اختيارية", "optional")</span>
+            </label>
             <textarea id="@($"{SectionId}-instruction")" class="form-control" rows="1" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxInstructionLength"
                       placeholder="@defaults.SectionInstructionPlaceholder"
                       @bind="Section.Instruction" @bind:after="() => Edited(nameof(ExamSection.Instruction))"></textarea>
@@ -55,7 +60,9 @@
 
     @if (Section.Questions.Count == 0)
     {
-        <p class="section-empty">لا توجد أسئلة في هذا القسم بعد. أضف سؤالًا بأحد الأزرار أدناه.</p>
+        <p class="section-empty">
+            @Ui.Text("لا توجد أسئلة في هذا القسم بعد. أضف سؤالًا بأحد الأزرار أدناه.", "This section has no questions yet. Add one with the buttons below.")
+        </p>
     }
 
     <div class="question-list">
@@ -68,18 +75,20 @@
     </div>
 
     <div id="@($"{SectionId}-add")" class="add-question-bar" tabindex="-1" role="group"
-         aria-label="@($"إضافة سؤال إلى القسم {Index + 1}")">
-        <span class="add-question-label">إضافة سؤال:</span>
+         aria-label="@Ui.Text($"إضافة سؤال إلى القسم {number}", $"Add a question to section {number}")">
+        <span class="add-question-label">@Ui.Text("إضافة سؤال:", "Add a question:")</span>
         @foreach (var type in QuestionTypes)
         {
             <button type="button" class="btn btn-sm btn-outline-primary" disabled="@questionLimitReached"
                     @onclick="() => AddQuestionAsync(type)">
-                <Icon Name="plus"/> @ArabicText.TypeLabel(type)
+                <Icon Name="plus"/> @Ui.TypeLabel(type)
             </button>
         }
         @if (questionLimitReached)
         {
-            <span class="form-hint">بلغ الامتحان الحد الأقصى (@ExamLimits.MaxQuestions سؤال).</span>
+            <span class="form-hint">
+                @Ui.Text($"بلغ الامتحان الحد الأقصى ({ExamLimits.MaxQuestions} سؤال).", $"The exam has reached the limit of {ExamLimits.MaxQuestions} questions.")
+            </span>
         }
     </div>
 </section>
@@ -141,8 +150,9 @@
     private async Task DeleteAsync()
     {
         var count = Section.Questions.Count;
-        if (count > 0 && !await Browser.ConfirmAsync(
-                $"حذف القسم {Index + 1} وما فيه ({ArabicText.Questions(count)})؟ لا يمكن التراجع عن ذلك."))
+        if (count > 0 && !await Browser.ConfirmAsync(Ui.Text(
+                $"حذف القسم {Index + 1} وما فيه ({ArabicText.Questions(count)})؟ لا يمكن التراجع عن ذلك.",
+                $"Delete section {Index + 1} and its {EnglishText.Questions(count)}? This can't be undone.")))
         {
             return;
         }

@@ -3,9 +3,9 @@
 @if (Draft.Exam is { } exam)
 {
     var count = exam.QuestionCount();
-    <span class="totals-badge" title="عدد الأسئلة ومجموع العلامات">
-        @* An Arabic comma, not a middle dot: next to digits a dot reads like the Arabic zero. *@
-        <span>@(count == 0 ? "لا توجد أسئلة" : ArabicText.Questions(count))،</span>
-        <span>المجموع: @ArabicText.Marks(exam.TotalMarks())</span>
+    <span class="totals-badge" title="@Ui.Text("عدد الأسئلة ومجموع العلامات", "Number of questions and total marks")">
+        @* A comma, not a middle dot: next to digits a dot reads like the Arabic zero. *@
+        <span>@(count == 0 ? Ui.Text("لا توجد أسئلة", "No questions") : Ui.Questions(count))@Ui.Text("،", ",")</span>
+        <span>@Ui.Text("المجموع:", "Total:") @Ui.Marks(exam.TotalMarks())</span>
     </span>
 }

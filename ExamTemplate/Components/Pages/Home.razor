@@ -4,15 +4,15 @@
 @inject NavigationManager Navigation
 @inject ILogger<Home> Logger
 
-<PageTitle>مولّد الامتحانات</PageTitle>
+<PageTitle>@Ui.Text("مولّد الامتحانات", "Exam Generator")</PageTitle>
 
 <header class="page-header home-hero">
     <img src="images/qou-logo.png" alt="" width="72" height="70" class="home-logo"/>
     <div>
-        <h1>مولّد الامتحانات</h1>
+        <h1>@Ui.Text("مولّد الامتحانات", "Exam Generator")</h1>
         <p class="page-lead">
-            أنشئ امتحانًا بأسئلة اختيار من متعدد وصح أو خطأ وأسئلة مقالية، ثم ولّد منه حتى أربعة نماذج مخلوطة
-            مع مفاتيح الإجابة بصيغتي Word وPDF.
+            @Ui.Text("أنشئ امتحانًا بأسئلة اختيار من متعدد وصح أو خطأ وأسئلة مقالية، ثم ولّد منه حتى أربعة نماذج مخلوطة مع مفاتيح الإجابة بصيغتي Word وPDF.",
+                "Create an exam with multiple-choice, true-or-false and essay questions, then generate up to four shuffled versions with their answer keys, as Word and PDF files.")
         </p>
     </div>
 </header>
@@ -21,7 +21,7 @@
 {
     <div class="loading-state" role="status">
         <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-        جارٍ البحث عن مسودة محفوظة…
+        @Ui.Text("جارٍ البحث عن مسودة محفوظة…", "Looking for a saved draft…")
     </div>
 }
 else
@@ -30,7 +30,7 @@ else
     {
         <div class="alert @(messageIsError ? "alert-danger" : "alert-success") alert-dismissible" role="alert">
             @message
-            <button type="button" class="btn-close" aria-label="إغلاق" @onclick="() => message = null"></button>
+            <button type="button" class="btn-close" aria-label="@Ui.Text("إغلاق", "Close")" @onclick="() => message = null"></button>
         </div>
     }
 
@@ -43,12 +43,12 @@ else
     {
         var questionCount = exam.QuestionCount();
         <section class="panel draft-card" aria-labelledby="draft-title">
-            <h2 id="draft-title" class="panel-title">متابعة المسودة الحالية</h2>
+            <h2 id="draft-title" class="panel-title">@Ui.Text("متابعة المسودة الحالية", "Continue the current draft")</h2>
             <dl class="draft-facts">
                 <div>
-                    <dt>المقرر</dt>
+                    <dt>@Ui.Text("المقرر", "Course")</dt>
                     <dd>
-                        <span dir="auto">@(string.IsNullOrWhiteSpace(exam.Header.CourseName) ? "بلا اسم" : exam.Header.CourseName)</span>
+                        <span dir="auto">@(string.IsNullOrWhiteSpace(exam.Header.CourseName) ? Ui.Text("بلا اسم", "Untitled") : exam.Header.CourseName)</span>
                         @if (!string.IsNullOrWhiteSpace(exam.Header.CourseCode))
                         {
                             <span class="text-body-secondary ms-1" dir="ltr">(@exam.Header.CourseCode)</span>
@@ -56,51 +56,56 @@ else
                     </dd>
                 </div>
                 <div>
-                    <dt>المحتوى</dt>
-                    <dd>@(questionCount == 0 ? "لا توجد أسئلة" : ArabicText.Questions(questionCount))، @ArabicText.Marks(exam.TotalMarks())</dd>
+                    <dt>@Ui.Text("المحتوى", "Content")</dt>
+                    <dd>@Ui.Join([questionCount == 0 ? Ui.Text("لا توجد أسئلة", "No questions") : Ui.Questions(questionCount), Ui.Marks(exam.TotalMarks())])</dd>
                 </div>
                 <div>
-                    <dt>آخر حفظ</dt>
+                    <dt>@Ui.Text("آخر حفظ", "Last saved")</dt>
                     <dd>@SavedAtText</dd>
                 </div>
             </dl>
             <div class="button-row">
-                <a class="btn btn-primary" href="exam/details">متابعة التحرير</a>
-                <a class="btn btn-outline-primary" href="exam/generate">التوليد والتصدير</a>
+                <a class="btn btn-primary" href="exam/details">@Ui.Text("متابعة التحرير", "Continue editing")</a>
+                <a class="btn btn-outline-primary" href="exam/generate">@Ui.Text("التوليد والتصدير", "Generate and export")</a>
                 <button type="button" class="btn btn-outline-danger ms-sm-auto" disabled="@busy" @onclick="DeleteDraftAsync">
-                    <Icon Name="trash"/> حذف المسودة
+                    <Icon Name="trash"/> @Ui.Text("حذف المسودة", "Delete draft")
                 </button>
             </div>
         </section>
     }
 
     <section class="panel" aria-labelledby="start-title">
-        <h2 id="start-title" class="panel-title">@(Draft.Exam is null ? "ابدأ" : "أو ابدأ امتحانًا آخر")</h2>
+        <h2 id="start-title" class="panel-title">@(Draft.Exam is null ? Ui.Text("ابدأ", "Start") : Ui.Text("أو ابدأ امتحانًا آخر", "Or start another exam"))</h2>
         <div class="start-options">
             <button type="button" class="start-option" disabled="@busy" @onclick="CreateNewAsync">
                 <Icon Name="plus" Class="start-icon"/>
-                <span class="start-title">امتحان جديد</span>
-                <span class="start-text">قسم فارغ مع التعليمات الافتراضية.</span>
+                <span class="start-title">@Ui.Text("امتحان جديد", "New exam")</span>
+                <span class="start-text">@Ui.Text("قسم فارغ مع التعليمات الافتراضية.", "One empty section with the default instructions.")</span>
             </button>
 
             <label class="start-option @(busy ? "is-disabled" : null)">
                 <Icon Name="upload" Class="start-icon"/>
-                <span class="start-title">استيراد ملف امتحان (JSON)</span>
-                <span class="start-text">ملف صدّرته سابقًا من هذا التطبيق، حتى 5 ميغابايت.</span>
+                <span class="start-title">@Ui.Text("استيراد ملف امتحان (JSON)", "Import an exam file (JSON)")</span>
+                <span class="start-text">@Ui.Text("ملف صدّرته سابقًا من هذا التطبيق، حتى 5 ميغابايت.", "A file you exported from this app before, up to 5 MB.")</span>
                 <InputFile @key="importInputKey" class="visually-hidden" accept=".json,application/json"
                            disabled="@busy" OnChange="ImportAsync"/>
             </label>
 
             <button type="button" class="start-option" disabled="@busy" @onclick="() => LoadSampleAsync(DemoExams.ComputerLogicDesign)">
                 <Icon Name="sample" Class="start-icon"/>
-                <span class="start-title">تحميل نموذج تجريبي</span>
-                <span class="start-text">امتحان «تصميم منطق الحاسوب»: ثلاثة أقسام وثمانية أسئلة ونموذجان.</span>
+                <span class="start-title">@Ui.Text("تحميل نموذج تجريبي", "Sample exam in Arabic")</span>
+                <span class="start-text">
+                    @Ui.Text("امتحان «تصميم منطق الحاسوب»: ثلاثة أقسام وثمانية أسئلة ونموذجان.",
+                        "The Computer Logic Design exam: three sections, eight questions and two versions, printed right to left.")
+                </span>
             </button>
 
             <button type="button" class="start-option" disabled="@busy" @onclick="() => LoadSampleAsync(DemoExams.ComputerLogicDesignEnglish)">
                 <Icon Name="sample" Class="start-icon"/>
-                <span class="start-title">نموذج تجريبي بالإنجليزية</span>
-                <span class="start-text">الامتحان نفسه باللغة الإنجليزية، ويُطبع من اليسار إلى اليمين.</span>
+                <span class="start-title">@Ui.Text("نموذج تجريبي بالإنجليزية", "Sample exam in English")</span>
+                <span class="start-text">
+                    @Ui.Text("الامتحان نفسه باللغة الإنجليزية، ويُطبع من اليسار إلى اليمين.", "The same exam in English, printed left to right.")
+                </span>
             </button>
         </div>
     </section>
@@ -108,8 +113,8 @@ else
     <p class="storage-note">
         <Icon Name="warning"/>
         <span>
-            تُحفظ المسودة تلقائيًا في هذا المتصفح فقط ولا تُخزَّن على الخادم. للاحتفاظ بنسخة أو للعمل من جهاز آخر استخدم
-            «تصدير ملف الامتحان (JSON)» في صفحة التوليد والتصدير، واحذف المسودة بعد الانتهاء إن كان الجهاز مشتركًا.
+            @Ui.Text("تُحفظ المسودة تلقائيًا في هذا المتصفح فقط ولا تُخزَّن على الخادم. للاحتفاظ بنسخة أو للعمل من جهاز آخر استخدم «تصدير ملف الامتحان (JSON)» في صفحة التوليد والتصدير، واحذف المسودة بعد الانتهاء إن كان الجهاز مشتركًا.",
+                "The draft is saved automatically in this browser only, never on the server. To keep a copy or to work on another computer, use “Export exam file (JSON)” on the Generate and export page, and delete the draft when you finish on a shared computer.")
         </span>
     </p>
 }
@@ -127,10 +132,10 @@ else
 
     private string SavedAtText => Draft.SaveStatus switch
     {
-        DraftSaveStatus.Pending or DraftSaveStatus.Saving => "جارٍ الحفظ…",
-        DraftSaveStatus.Failed => "تعذّر الحفظ في المتصفح",
+        DraftSaveStatus.Pending or DraftSaveStatus.Saving => Ui.Text("جارٍ الحفظ…", "Saving…"),
+        DraftSaveStatus.Failed => Ui.Text("تعذّر الحفظ في المتصفح", "Couldn't save in the browser"),
         _ when !string.IsNullOrEmpty(storedInfo?.SavedAtText) => storedInfo.SavedAtText,
-        _ => "غير معروف",
+        _ => Ui.Text("غير معروف", "Unknown"),
     };
 
     protected override async Task OnInitializedAsync()
@@ -169,7 +174,7 @@ else
         {
             if (e.File.Size > MaxImportBytes)
             {
-                ShowError("حجم الملف أكبر من 5 ميغابايت، ولا يمكن استيراده.");
+                ShowError(Ui.Text("حجم الملف أكبر من 5 ميغابايت، ولا يمكن استيراده.", "The file is larger than 5 MB and can't be imported."));
                 return;
             }
 
@@ -181,13 +186,15 @@ else
         }
         catch (ExamJsonException exception)
         {
-            ShowError(exception.UserMessage.Arabic);
+            ShowError(Ui.Text(exception.UserMessage));
             return;
         }
         catch (Exception exception) when (exception is not JSDisconnectedException)
         {
             Logger.LogWarning(exception, "Importing the exam file {FileName} failed.", e.File.Name);
-            ShowError("تعذّرت قراءة الملف. تأكد من أنه ملف امتحان صدّرته من هذا التطبيق ثم حاول مرة أخرى.");
+            ShowError(Ui.Text(
+                "تعذّرت قراءة الملف. تأكد من أنه ملف امتحان صدّرته من هذا التطبيق ثم حاول مرة أخرى.",
+                "The file couldn't be read. Make sure it's an exam file exported from this app, then try again."));
             return;
         }
         finally
@@ -206,8 +213,9 @@ else
 
     private async Task DeleteDraftAsync()
     {
-        var confirmed = await Browser.ConfirmAsync(
-            "حذف المسودة نهائيًا من هذا المتصفح؟ لا يمكن التراجع عن ذلك؛ صدّر ملف JSON أولًا إن أردت الاحتفاظ بنسخة.");
+        var confirmed = await Browser.ConfirmAsync(Ui.Text(
+            "حذف المسودة نهائيًا من هذا المتصفح؟ لا يمكن التراجع عن ذلك؛ صدّر ملف JSON أولًا إن أردت الاحتفاظ بنسخة.",
+            "Delete the draft from this browser for good? This can't be undone; export a JSON file first if you want to keep a copy."));
         if (!confirmed)
             return;
 
@@ -217,21 +225,26 @@ else
         storedInfo = null;
 
         if (deleted)
-            ShowSuccess("حُذفت المسودة من هذا المتصفح.");
+            ShowSuccess(Ui.Text("حُذفت المسودة من هذا المتصفح.", "The draft was deleted from this browser."));
         else
-            ShowError("أُغلق الامتحان، لكن تعذّر حذف المسودة من تخزين المتصفح.");
+            ShowError(Ui.Text("أُغلق الامتحان، لكن تعذّر حذف المسودة من تخزين المتصفح.", "The exam was closed, but the draft couldn't be deleted from the browser's storage."));
     }
 
     private async Task<bool> ConfirmReplaceAsync()
     {
         if (Draft.Exam is not null)
         {
-            return await Browser.ConfirmAsync(
-                "سيحلّ الامتحان الجديد محلّ المسودة الحالية، ولن يمكن استعادتها إلا من ملف JSON مُصدَّر. هل تريد المتابعة؟");
+            return await Browser.ConfirmAsync(Ui.Text(
+                "سيحلّ الامتحان الجديد محلّ المسودة الحالية، ولن يمكن استعادتها إلا من ملف JSON مُصدَّر. هل تريد المتابعة؟",
+                "The new exam will replace the current draft, which can only be recovered from an exported JSON file. Continue?"));
         }
 
         if (Draft.RestoreError is not null)
-            return await Browser.ConfirmAsync("ستُستبدل المسودة المحفوظة التي تعذّرت قراءتها. هل تريد المتابعة؟");
+        {
+            return await Browser.ConfirmAsync(Ui.Text(
+                "ستُستبدل المسودة المحفوظة التي تعذّرت قراءتها. هل تريد المتابعة؟",
+                "The saved draft that couldn't be read will be replaced. Continue?"));
+        }
 
         return true;
     }
@@ -240,7 +253,7 @@ else
     {
         try
         {
-            return await Browser.GetDraftInfoAsync();
+            return await Browser.GetDraftInfoAsync(Ui.DateLocale);
         }
         catch (JSException exception)
         {

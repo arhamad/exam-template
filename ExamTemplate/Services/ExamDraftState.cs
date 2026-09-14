@@ -21,12 +21,13 @@ public enum DraftSaveStatus
 /// The exam being edited in this circuit, autosaved to the browser's localStorage one second after the last change.
 /// Every edit must be followed by <see cref="NotifyChanged"/>. Used from the renderer's dispatcher only.
 /// </summary>
-public sealed class ExamDraftState(BrowserInterop browser, ILogger<ExamDraftState> logger) : IDisposable
+public sealed class ExamDraftState(BrowserInterop browser, UiText ui, ILogger<ExamDraftState> logger) : IDisposable
 {
     public static readonly TimeSpan AutosaveDelay = TimeSpan.FromSeconds(1);
 
-    private const string RetryRestoreMessage =
-        "تعذّرت قراءة المسودة المحفوظة في هذا المتصفح. أعد تحميل الصفحة للمحاولة مرة أخرى.";
+    private string RetryRestoreMessage => ui.Text(
+        "تعذّرت قراءة المسودة المحفوظة في هذا المتصفح. أعد تحميل الصفحة للمحاولة مرة أخرى.",
+        "The draft saved in this browser couldn't be read. Reload the page to try again.");
 
     private Task? loading;
     private CancellationTokenSource? pendingSave;
@@ -44,10 +45,19 @@ public sealed class ExamDraftState(BrowserInterop browser, ILogger<ExamDraftStat
     /// <summary>Show every validation issue in the editors, not only those of fields the user has touched.</summary>
     public bool ShowAllIssues { get; set; }
 
-    /// <summary>Arabic explanation when the stored draft could not be restored.</summary>
+    /// <summary>Why the stored draft could not be restored, in the interface language.</summary>
     public string? RestoreError { get; private set; }
 
     public bool HasUnsavedChanges => SaveStatus is DraftSaveStatus.Pending or DraftSaveStatus.Saving or DraftSaveStatus.Failed;
+
+    /// <summary>The page is about to reload on purpose (the language switch), so the browser shouldn't ask to leave.</summary>
+    public bool LeavePromptSuppressed { get; private set; }
+
+    public void SuppressLeavePrompt()
+    {
+        LeavePromptSuppressed = true;
+        Changed?.Invoke();
+    }
 
     /// <summary>Raised after any change to the exam, the save status or the restore state.</summary>
     public event Action? Changed;
@@ -151,7 +161,9 @@ public sealed class ExamDraftState(BrowserInterop browser, ILogger<ExamDraftStat
         }
         catch (ExamJsonException exception)
         {
-            RestoreError = $"تعذّرت استعادة المسودة المحفوظة في هذا المتصفح: {exception.UserMessage.Arabic}";
+            RestoreError = ui.Text(
+                $"تعذّرت استعادة المسودة المحفوظة في هذا المتصفح: {exception.UserMessage.Arabic}",
+                $"The draft saved in this browser couldn't be restored: {exception.UserMessage.English}");
             logger.LogWarning(exception, "The draft stored in the browser could not be read.");
         }
         catch (JSDisconnectedException)

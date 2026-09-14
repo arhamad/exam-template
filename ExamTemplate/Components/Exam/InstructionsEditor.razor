@@ -3,16 +3,21 @@
 
 <section id="field-Instructions" class="panel focus-target" tabindex="-1" aria-labelledby="instructions-title">
     <div class="panel-heading">
-        <h2 id="instructions-title" class="panel-title">تعليمات الامتحان</h2>
-        <span class="panel-count">@Exam.Instructions.Count من @ExamLimits.MaxInstructions</span>
+        <h2 id="instructions-title" class="panel-title">@Ui.Text("تعليمات الامتحان", "Exam instructions")</h2>
+        <span class="panel-count">
+            @Ui.Text($"{Exam.Instructions.Count} من {ExamLimits.MaxInstructions}", $"{Exam.Instructions.Count} of {ExamLimits.MaxInstructions}")
+        </span>
     </div>
-    <p class="panel-lead">تُطبع مرقّمة في أعلى ورقة الامتحان، ولا تُطبع التعليمات الفارغة.</p>
+    <p class="panel-lead">
+        @Ui.Text("تُطبع مرقّمة في أعلى ورقة الامتحان، ولا تُطبع التعليمات الفارغة.",
+            "Printed as a numbered list at the top of the exam paper. Empty instructions aren't printed.")
+    </p>
 
     <FieldIssues Issues="VisibleIssues" Id="issues-Instructions"/>
 
     @if (Exam.Instructions.Count == 0)
     {
-        <p class="text-body-secondary">لا توجد تعليمات.</p>
+        <p class="text-body-secondary">@Ui.Text("لا توجد تعليمات.", "There are no instructions.")</p>
     }
     else
     {
@@ -26,21 +31,21 @@
                 <li @key="rowId" class="instruction-row">
                     <span class="instruction-number" aria-hidden="true">@number</span>
                     <textarea id="@TextId(rowId)" class="form-control" rows="1" dir="@ExamContent.Dir(Exam.Language)" lang="@ExamContent.Lang(Exam.Language)" maxlength="@ExamLimits.MaxInstructionLength"
-                              aria-label="@($"نص التعليمة {number}")"
+                              aria-label="@Ui.Text($"نص التعليمة {number}", $"Text of instruction {number}")"
                               @bind="Exam.Instructions[i]" @bind:after="OnEdited"></textarea>
                     <div class="row-actions">
                         <button id="@ButtonId(rowId, "up")" type="button" class="btn btn-sm btn-outline-secondary icon-button"
-                                title="نقل للأعلى" aria-label="@($"نقل التعليمة {number} للأعلى")"
+                                title="@Ui.Text("نقل للأعلى", "Move up")" aria-label="@Ui.Text($"نقل التعليمة {number} للأعلى", $"Move instruction {number} up")"
                                 disabled="@(i == 0)" @onclick="() => Move(i, -1)">
                             <Icon Name="up"/>
                         </button>
                         <button id="@ButtonId(rowId, "down")" type="button" class="btn btn-sm btn-outline-secondary icon-button"
-                                title="نقل للأسفل" aria-label="@($"نقل التعليمة {number} للأسفل")"
+                                title="@Ui.Text("نقل للأسفل", "Move down")" aria-label="@Ui.Text($"نقل التعليمة {number} للأسفل", $"Move instruction {number} down")"
                                 disabled="@isLast" @onclick="() => Move(i, 1)">
                             <Icon Name="down"/>
                         </button>
                         <button type="button" class="btn btn-sm btn-outline-danger icon-button"
-                                title="حذف" aria-label="@($"حذف التعليمة {number}")"
+                                title="@Ui.Text("حذف", "Delete")" aria-label="@Ui.Text($"حذف التعليمة {number}", $"Delete instruction {number}")"
                                 @onclick="() => Remove(i)">
                             <Icon Name="trash"/>
                         </button>
@@ -52,7 +57,7 @@
 
     <button id="instruction-add" type="button" class="btn btn-outline-primary btn-sm"
             disabled="@(Exam.Instructions.Count >= ExamLimits.MaxInstructions)" @onclick="Add">
-        <Icon Name="plus"/> إضافة تعليمة
+        <Icon Name="plus"/> @Ui.Text("إضافة تعليمة", "Add instruction")
     </button>
 </section>
 

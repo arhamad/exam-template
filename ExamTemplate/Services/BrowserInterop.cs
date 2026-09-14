@@ -38,8 +38,9 @@ public sealed class BrowserInterop(IJSRuntime js) : IAsyncDisposable
         return await (await GetModuleAsync()).InvokeAsync<bool>("saveDraft", json, info);
     }
 
-    public async Task<DraftInfo?> GetDraftInfoAsync() =>
-        await (await GetModuleAsync()).InvokeAsync<DraftInfo?>("getDraftInfo");
+    /// <param name="dateLocale">The browser locale for the save time, e.g. <see cref="UiText.DateLocale"/>.</param>
+    public async Task<DraftInfo?> GetDraftInfoAsync(string dateLocale) =>
+        await (await GetModuleAsync()).InvokeAsync<DraftInfo?>("getDraftInfo", dateLocale);
 
     /// <summary>Reads the stored draft as a stream, so its size isn't limited by the SignalR message size.</summary>
     /// <returns>The draft, or <c>null</c> when this browser has none.</returns>
@@ -109,6 +110,10 @@ public sealed class BrowserInterop(IJSRuntime js) : IAsyncDisposable
             return false;
         }
     }
+
+    /// <summary>Remembers the interface language in a cookie; it applies from the next page load.</summary>
+    public async Task SetUiLanguageAsync(UiLanguage language) =>
+        await (await GetModuleAsync()).InvokeVoidAsync("setUiLanguage", UiLanguageCookie.Code(language));
 
     /// <summary>The browser's own confirmation dialog.</summary>
     public async Task<bool> ConfirmAsync(string message) => await js.InvokeAsync<bool>("confirm", message);

@@ -4,8 +4,9 @@
     @if (Draft.Exam is { } exam)
     {
         <div class="exam-identity">
+            @* dir="auto": the course name is in the exam's language, which may differ from the interface's. *@
             <span class="exam-course" dir="auto">
-                @(string.IsNullOrWhiteSpace(exam.Header.CourseName) ? "امتحان بلا اسم مقرر" : exam.Header.CourseName)
+                @(string.IsNullOrWhiteSpace(exam.Header.CourseName) ? Ui.Text("امتحان بلا اسم مقرر", "Exam without a course name") : exam.Header.CourseName)
             </span>
             @if (!string.IsNullOrWhiteSpace(exam.Header.CourseCode))
             {
@@ -19,6 +20,7 @@
     }
     else
     {
-        <span class="exam-identity text-body-secondary">لا يوجد امتحان مفتوح</span>
+        <span class="exam-identity text-body-secondary">@Ui.Text("لا يوجد امتحان مفتوح", "No exam is open")</span>
     }
+    <LanguageSwitch/>
 </header>

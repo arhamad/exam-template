@@ -1,6 +1,14 @@
-﻿<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
         <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)"/>
         <FocusOnNavigate RouteData="routeData" Selector="h1"/>
     </Found>
 </Router>
+
+@code {
+    /// <summary>The interface language, read from the cookie by <c>App</c> for the page this circuit belongs to.</summary>
+    [Parameter] public UiLanguage Language { get; set; }
+
+    // The first component of the circuit, so every page, layout and service sees the language.
+    protected override void OnInitialized() => Ui.Use(Language);
+}

@@ -1,12 +1,15 @@
 @page "/not-found"
 @layout MainLayout
 
-<PageTitle>الصفحة غير موجودة – مولّد الامتحانات</PageTitle>
+<PageTitle>@Ui.Text("الصفحة غير موجودة – مولّد الامتحانات", "Page not found – Exam Generator")</PageTitle>
 
 <div class="empty-state">
-    <h1 class="h3">الصفحة غير موجودة</h1>
-    <p class="text-body-secondary">عذرًا، لا يوجد محتوى على هذا العنوان. تحقّق من الرابط أو عُد إلى الصفحة الرئيسية.</p>
+    <h1 class="h3">@Ui.Text("الصفحة غير موجودة", "Page not found")</h1>
+    <p class="text-body-secondary">
+        @Ui.Text("عذرًا، لا يوجد محتوى على هذا العنوان. تحقّق من الرابط أو عُد إلى الصفحة الرئيسية.",
+            "Sorry, there's nothing at this address. Check the link or go back to the home page.")
+    </p>
     <a class="btn btn-primary" href="">
-        <Icon Name="home"/> الصفحة الرئيسية
+        <Icon Name="home"/> @Ui.Text("الصفحة الرئيسية", "Home page")
     </a>
 </div>

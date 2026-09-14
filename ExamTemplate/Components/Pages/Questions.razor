@@ -1,13 +1,13 @@
 @page "/exam/questions"
 @inherits ExamPageBase
 
-<PageTitle>الأسئلة – مولّد الامتحانات</PageTitle>
+<PageTitle>@Ui.Text("الأسئلة – مولّد الامتحانات", "Questions – Exam Generator")</PageTitle>
 
 <header class="page-header">
-    <h1>الأسئلة</h1>
+    <h1>@Ui.Text("الأسئلة", "Questions")</h1>
     <p class="page-lead">
-        تُرقَّم الأسئلة بالتسلسل عبر الأقسام. عند توليد أكثر من نموذج تُخلط الأسئلة داخل قسمها فقط،
-        وتُخلط خيارات أسئلة الاختيار من متعدد ما لم تُثبَّت.
+        @Ui.Text("تُرقَّم الأسئلة بالتسلسل عبر الأقسام. عند توليد أكثر من نموذج تُخلط الأسئلة داخل قسمها فقط، وتُخلط خيارات أسئلة الاختيار من متعدد ما لم تُثبَّت.",
+            "Questions are numbered continuously across sections. When more than one version is generated, questions are shuffled only within their section, and multiple-choice options are shuffled unless their order is kept.")
     </p>
 </header>
 
@@ -15,7 +15,7 @@
 {
     <div class="loading-state" role="status">
         <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-        جارٍ تحميل المسودة…
+        @Ui.Text("جارٍ تحميل المسودة…", "Loading the draft…")
     </div>
 }
 else if (Exam is not { } exam)
@@ -38,22 +38,23 @@ else
     @if (exam.Sections.Count == 0)
     {
         <div class="empty-state mb-3">
-            <p class="mb-0">لا توجد أقسام. أضف قسمًا لتبدأ كتابة الأسئلة.</p>
+            <p class="mb-0">@Ui.Text("لا توجد أقسام. أضف قسمًا لتبدأ كتابة الأسئلة.", "There are no sections. Add a section to start writing questions.")</p>
         </div>
     }
 
     <div class="add-section-bar">
         <button id="section-add" type="button" class="btn btn-outline-primary"
                 disabled="@(exam.Sections.Count >= ExamLimits.MaxSections)" @onclick="AddSection">
-            <Icon Name="plus"/> إضافة قسم
+            <Icon Name="plus"/> @Ui.Text("إضافة قسم", "Add section")
         </button>
         @if (exam.Sections.Count >= ExamLimits.MaxSections)
         {
-            <span class="form-hint">الحد الأقصى @ExamLimits.MaxSections قسمًا.</span>
+            <span class="form-hint">@Ui.Text($"الحد الأقصى {ExamLimits.MaxSections} قسمًا.", $"The limit is {ExamLimits.MaxSections} sections.")</span>
         }
     </div>
 
-    <StepFooter PreviousHref="exam/details" PreviousText="معلومات الامتحان" NextHref="exam/generate" NextText="التوليد والتصدير"/>
+    <StepFooter PreviousHref="exam/details" PreviousText="@Ui.Text("معلومات الامتحان", "Exam details")"
+                NextHref="exam/generate" NextText="@Ui.Text("التوليد والتصدير", "Generate and export")"/>
 }
 
 @code {

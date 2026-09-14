@@ -1,18 +1,21 @@
 @page "/exam/details"
 @inherits ExamPageBase
 
-<PageTitle>معلومات الامتحان – مولّد الامتحانات</PageTitle>
+<PageTitle>@Ui.Text("معلومات الامتحان – مولّد الامتحانات", "Exam details – Exam Generator")</PageTitle>
 
 <header class="page-header">
-    <h1>معلومات الامتحان</h1>
-    <p class="page-lead">البيانات التي تُطبع في رأس ورقة الامتحان وتذييلها، وتعليمات الامتحان.</p>
+    <h1>@Ui.Text("معلومات الامتحان", "Exam details")</h1>
+    <p class="page-lead">
+        @Ui.Text("البيانات التي تُطبع في رأس ورقة الامتحان وتذييلها، وتعليمات الامتحان.",
+            "What is printed in the header and footer of the exam paper, and the exam instructions.")
+    </p>
 </header>
 
 @if (IsLoading)
 {
     <div class="loading-state" role="status">
         <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-        جارٍ تحميل المسودة…
+        @Ui.Text("جارٍ تحميل المسودة…", "Loading the draft…")
     </div>
 }
 else if (Exam is not { } exam)
@@ -27,9 +30,13 @@ else
     var lang = ExamContent.Lang(exam.Language);
 
     <section class="panel" aria-labelledby="language-title">
-        <h2 id="language-title" class="panel-title">لغة الامتحان</h2>
-        <p class="panel-lead">تُطبع الورقة الإنجليزية من اليسار إلى اليمين، وتُستبدل القيم الافتراضية التي لم تُعدَّل.</p>
+        <h2 id="language-title" class="panel-title">@Ui.Text("لغة الامتحان", "Exam language")</h2>
+        <p class="panel-lead">
+            @Ui.Text("تُطبع الورقة الإنجليزية من اليسار إلى اليمين، وتُستبدل القيم الافتراضية التي لم تُعدَّل.",
+                "Arabic papers print right to left and English papers left to right. Default values you haven't edited are replaced.")
+        </p>
         <div class="btn-group" role="radiogroup" aria-labelledby="language-title">
+            @* Each language is named in its own script, whatever the interface language. *@
             @foreach (var (language, label) in Languages)
             {
                 <input id="@($"language-{language}")" type="radio" class="btn-check" name="exam-language"
@@ -40,12 +47,12 @@ else
     </section>
 
     <section class="panel" aria-labelledby="header-title">
-        <h2 id="header-title" class="panel-title">رأس الورقة</h2>
-        <p class="panel-lead">الحقول المعلَّمة بـ <span class="required-mark">*</span> مطلوبة.</p>
+        <h2 id="header-title" class="panel-title">@Ui.Text("رأس الورقة", "Paper header")</h2>
+        <p class="panel-lead">@Ui.Text("الحقول المعلَّمة بـ", "Fields marked") <span class="required-mark">*</span> @Ui.Text("مطلوبة.", "are required.")</p>
 
         <div class="row g-3">
             <div class="col-md-6">
-                <label class="form-label" for="field-UniversityName">اسم الجامعة<span class="required-mark" aria-hidden="true">*</span></label>
+                <label class="form-label" for="field-UniversityName">@Ui.Text("اسم الجامعة", "University name")<span class="required-mark" aria-hidden="true">*</span></label>
                 <input id="field-UniversityName" class="form-control" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
                        aria-invalid="@InvalidFor(nameof(ExamHeader.UniversityName))" aria-describedby="@DescribedBy(nameof(ExamHeader.UniversityName))"
                        @bind="header.UniversityName" @bind:after="() => Changed(nameof(ExamHeader.UniversityName))"
@@ -54,7 +61,7 @@ else
             </div>
 
             <div class="col-md-6">
-                <label class="form-label" for="field-ExamTitle">عنوان الامتحان<span class="required-mark" aria-hidden="true">*</span></label>
+                <label class="form-label" for="field-ExamTitle">@Ui.Text("عنوان الامتحان", "Exam title")<span class="required-mark" aria-hidden="true">*</span></label>
                 <input id="field-ExamTitle" class="form-control" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
                        placeholder="@defaults.ExamTitle"
                        aria-invalid="@InvalidFor(nameof(ExamHeader.ExamTitle))" aria-describedby="@DescribedBy(nameof(ExamHeader.ExamTitle))"
@@ -64,7 +71,7 @@ else
             </div>
 
             <div class="col-md-6">
-                <label class="form-label" for="field-CourseName">اسم المقرر<span class="required-mark" aria-hidden="true">*</span></label>
+                <label class="form-label" for="field-CourseName">@Ui.Text("اسم المقرر", "Course name")<span class="required-mark" aria-hidden="true">*</span></label>
                 <input id="field-CourseName" class="form-control" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
                        placeholder="@defaults.CourseNamePlaceholder"
                        aria-invalid="@InvalidFor(nameof(ExamHeader.CourseName))" aria-describedby="@DescribedBy(nameof(ExamHeader.CourseName))"
@@ -74,7 +81,7 @@ else
             </div>
 
             <div class="col-sm-6 col-md-3">
-                <label class="form-label" for="field-CourseCode">رقم المقرر<span class="required-mark" aria-hidden="true">*</span></label>
+                <label class="form-label" for="field-CourseCode">@Ui.Text("رقم المقرر", "Course code")<span class="required-mark" aria-hidden="true">*</span></label>
                 <input id="field-CourseCode" class="form-control" dir="ltr" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
                        placeholder="1290"
                        aria-invalid="@InvalidFor(nameof(ExamHeader.CourseCode))" aria-describedby="@DescribedBy(nameof(ExamHeader.CourseCode))"
@@ -84,7 +91,7 @@ else
             </div>
 
             <div class="col-sm-6 col-md-3">
-                <label class="form-label" for="field-AcademicYear">العام الأكاديمي<span class="required-mark" aria-hidden="true">*</span></label>
+                <label class="form-label" for="field-AcademicYear">@Ui.Text("العام الأكاديمي", "Academic year")<span class="required-mark" aria-hidden="true">*</span></label>
                 <input id="field-AcademicYear" class="form-control" dir="ltr" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
                        placeholder="2026/2027"
                        aria-invalid="@InvalidFor(nameof(ExamHeader.AcademicYear))" aria-describedby="@DescribedBy(nameof(ExamHeader.AcademicYear))"
@@ -94,7 +101,7 @@ else
             </div>
 
             <div class="col-md-6">
-                <label class="form-label" for="field-Semester">الفصل الدراسي</label>
+                <label class="form-label" for="field-Semester">@Ui.Text("الفصل الدراسي", "Semester")</label>
                 <input id="field-Semester" class="form-control" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxHeaderFieldLength"
                        placeholder="@defaults.Semester"
                        aria-invalid="@InvalidFor(nameof(ExamHeader.Semester))" aria-describedby="@DescribedBy(nameof(ExamHeader.Semester))"
@@ -104,7 +111,7 @@ else
             </div>
 
             <div class="col-sm-6 col-md-3">
-                <label class="form-label" for="field-Duration">مدة الامتحان<span class="required-mark" aria-hidden="true">*</span></label>
+                <label class="form-label" for="field-Duration">@Ui.Text("مدة الامتحان", "Exam duration")<span class="required-mark" aria-hidden="true">*</span></label>
                 <input id="field-Duration" class="form-control" dir="@dir" lang="@lang" maxlength="@ExamLimits.MaxHeaderFieldLength" aria-required="true"
                        placeholder="@defaults.Duration"
                        aria-invalid="@InvalidFor(nameof(ExamHeader.Duration))" aria-describedby="@DescribedBy(nameof(ExamHeader.Duration))"
@@ -114,11 +121,11 @@ else
             </div>
 
             <div class="col-sm-6 col-md-3">
-                <label class="form-label" for="field-ExamMode">نوع الامتحان</label>
+                <label class="form-label" for="field-ExamMode">@Ui.Text("نوع الامتحان", "Exam type")</label>
                 <select id="field-ExamMode" class="form-select" dir="@dir" lang="@lang"
                         aria-invalid="@InvalidFor(nameof(ExamHeader.ExamMode))" aria-describedby="@DescribedBy(nameof(ExamHeader.ExamMode))"
                         @bind="header.ExamMode" @bind:after="() => Changed(nameof(ExamHeader.ExamMode))">
-                    <option value="">غير محدد</option>
+                    <option value="" dir="@Ui.Dir" lang="@Ui.Lang">@Ui.Text("غير محدد", "Not specified")</option>
                     @foreach (var mode in defaults.ExamModes)
                     {
                         <option value="@mode">@mode</option>
@@ -132,17 +139,17 @@ else
             </div>
 
             <div class="col-sm-6 col-md-3">
-                <label class="form-label" for="field-ExamDate">تاريخ الامتحان</label>
+                <label class="form-label" for="field-ExamDate">@Ui.Text("تاريخ الامتحان", "Exam date")</label>
                 <input id="field-ExamDate" type="date" class="form-control"
                        @bind="header.ExamDate" @bind:after="() => Changed(nameof(ExamHeader.ExamDate))"/>
-                <div class="form-text">اختياري؛ يُطبع في رأس الورقة.</div>
+                <div class="form-text">@Ui.Text("اختياري؛ يُطبع في رأس الورقة.", "Optional; printed in the paper header.")</div>
             </div>
         </div>
     </section>
 
     <InstructionsEditor Exam="exam"/>
 
-    <StepFooter PreviousHref="" PreviousText="الرئيسية" NextHref="exam/questions" NextText="الأسئلة"/>
+    <StepFooter PreviousHref="" PreviousText="@Ui.Text("الرئيسية", "Home")" NextHref="exam/questions" NextText="@Ui.Text("الأسئلة", "Questions")"/>
 }
 
 @code {

@@ -23,7 +23,7 @@ export function saveDraft(json, info) {
     }
 }
 
-export function getDraftInfo() {
+export function getDraftInfo(locale) {
     try {
         if (localStorage.getItem(draftKey) === null) {
             return null;
@@ -40,7 +40,7 @@ export function getDraftInfo() {
             courseName: String(info.courseName ?? '').slice(0, maxInfoTextLength),
             courseCode: String(info.courseCode ?? '').slice(0, maxInfoTextLength),
             questionCount: Number.isInteger(info.questionCount) ? info.questionCount : 0,
-            savedAtText: formatTime(info.savedAt),
+            savedAtText: formatTime(info.savedAt, locale),
         };
     } catch {
         return null;
@@ -95,6 +95,16 @@ export function revokeObjectUrl(url) {
     }
 }
 
+// Remembers the interface language for the server to read on the next page load. Only the two known codes are written.
+export function setUiLanguage(code) {
+    if (code !== 'ar' && code !== 'en') {
+        return;
+    }
+
+    const secure = location.protocol === 'https:' ? '; secure' : '';
+    document.cookie = `examTemplate.uiLanguage=${code}; path=/; max-age=31536000; samesite=lax${secure}`;
+}
+
 // alignToTop: deep-link targets are scrolled to the top; otherwise the browser scrolls only if needed.
 export function focusElement(id, alignToTop) {
     const element = document.getElementById(id);
@@ -112,7 +122,7 @@ export function focusElement(id, alignToTop) {
     return document.activeElement === element;
 }
 
-function formatTime(isoText) {
+function formatTime(isoText, locale) {
     if (typeof isoText !== 'string') {
         return '';
     }
@@ -122,8 +132,8 @@ function formatTime(isoText) {
         return '';
     }
 
-    // Gregorian calendar and Western digits, in the browser's own time zone.
-    return date.toLocaleString('ar-u-ca-gregory-nu-latn', {
+    // In the browser's own time zone. The .NET side asks for the Gregorian calendar and Western digits.
+    return date.toLocaleString(typeof locale === 'string' ? locale : 'ar-u-ca-gregory-nu-latn', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',

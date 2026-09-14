@@ -4,22 +4,22 @@
     <div class="container-fluid">
         <a class="navbar-brand" href="">
             <img src="images/qou-logo.png" alt="" width="40" height="39" class="brand-logo"/>
-            <span>مولّد الامتحانات</span>
+            <span>@Ui.Text("مولّد الامتحانات", "Exam Generator")</span>
         </a>
     </div>
 </div>
 
-<input type="checkbox" title="قائمة التنقل" aria-label="قائمة التنقل" class="navbar-toggler"/>
+<input type="checkbox" title="@Ui.Text("قائمة التنقل", "Navigation menu")" aria-label="@Ui.Text("قائمة التنقل", "Navigation menu")" class="navbar-toggler"/>
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column" aria-label="التنقل الرئيسي">
+    <nav class="nav flex-column" aria-label="@Ui.Text("التنقل الرئيسي", "Main navigation")">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <Icon Name="home"/> الرئيسية
+                <Icon Name="home"/> @Ui.Text("الرئيسية", "Home")
             </NavLink>
         </div>
 
-        <div class="nav-section-label px-3" aria-hidden="true">خطوات إعداد الامتحان</div>
+        <div class="nav-section-label px-3" aria-hidden="true">@Ui.Text("خطوات إعداد الامتحان", "Exam setup steps")</div>
 
         @{
             var hasExam = Draft.Exam is not null;
@@ -33,20 +33,20 @@
                 {
                     <NavLink class="nav-link" href="@step.Href">
                         <span class="step-number" aria-hidden="true">@step.Number</span>
-                        <span>@step.Title</span>
+                        <span>@Ui.Text(step.Title)</span>
                         @if (errors > 0)
                         {
-                            <span class="step-errors" title="أخطاء يجب إصلاحها">
-                                <span aria-hidden="true">@errors</span><span class="visually-hidden">@ArabicText.Errors(errors)</span>
+                            <span class="step-errors" title="@Ui.Text("أخطاء يجب إصلاحها", "Errors to fix")">
+                                <span aria-hidden="true">@errors</span><span class="visually-hidden">@Ui.Errors(errors)</span>
                             </span>
                         }
                     </NavLink>
                 }
                 else
                 {
-                    <span class="nav-link disabled" aria-disabled="true" title="افتح امتحانًا أولًا">
+                    <span class="nav-link disabled" aria-disabled="true" title="@Ui.Text("افتح امتحانًا أولًا", "Open an exam first")">
                         <span class="step-number" aria-hidden="true">@step.Number</span>
-                        <span>@step.Title</span>
+                        <span>@Ui.Text(step.Title)</span>
                     </span>
                 }
             </div>
@@ -64,14 +64,14 @@
 
     private static readonly Step[] Steps =
     [
-        new(1, "exam/details", "معلومات الامتحان",
+        new(1, "exam/details", new LocalizedText("معلومات الامتحان", "Exam details"),
             issue => issue.SectionId is null && DetailsFields.Contains(issue.Field)),
-        new(2, "exam/questions", "الأسئلة",
+        new(2, "exam/questions", new LocalizedText("الأسئلة", "Questions"),
             issue => issue.SectionId is not null || issue.Field == nameof(ExamDefinition.Sections)),
-        new(3, "exam/generate", "التوليد والتصدير",
+        new(3, "exam/generate", new LocalizedText("التوليد والتصدير", "Generate and export"),
             issue => issue.SectionId is null
                 && issue.Field is nameof(ExamDefinition.VersionCount) or nameof(ExamDefinition.ShuffleSeed)),
     ];
 
-    private sealed record Step(int Number, string Href, string Title, Func<ValidationIssue, bool> Owns);
+    private sealed record Step(int Number, string Href, LocalizedText Title, Func<ValidationIssue, bool> Owns);
 }

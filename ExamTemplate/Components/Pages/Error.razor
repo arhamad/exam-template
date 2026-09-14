@@ -2,24 +2,26 @@
 @attribute [ExcludeFromInteractiveRouting]
 @using System.Diagnostics
 
-<PageTitle>خطأ – مولّد الامتحانات</PageTitle>
+<PageTitle>@Ui.Text("خطأ – مولّد الامتحانات", "Error – Exam Generator")</PageTitle>
 
-<h1 class="text-danger">حدث خطأ</h1>
-<p class="lead">تعذّرت معالجة طلبك. حاول مرة أخرى، أو عُد إلى الصفحة الرئيسية.</p>
+<h1 class="text-danger">@Ui.Text("حدث خطأ", "An error occurred")</h1>
+<p class="lead">@Ui.Text("تعذّرت معالجة طلبك. حاول مرة أخرى، أو عُد إلى الصفحة الرئيسية.", "Your request couldn't be processed. Try again, or go back to the home page.")</p>
 
 @if (ShowRequestId)
 {
     <p>
-        <strong>معرّف الطلب:</strong> <code dir="ltr">@RequestId</code>
+        <strong>@Ui.Text("معرّف الطلب:", "Request ID:")</strong> <code dir="ltr">@RequestId</code>
     </p>
 }
 
 <p class="text-body-secondary">
-    لعرض تفاصيل الخطأ أثناء التطوير شغّل التطبيق في بيئة <strong dir="ltr">Development</strong>.
-    لا تفعّل هذه البيئة في التطبيقات المنشورة لأنها قد تعرض معلومات حساسة للمستخدمين.
+    @Ui.Text("لعرض تفاصيل الخطأ أثناء التطوير شغّل التطبيق في بيئة", "To see the error details during development, run the app in the")
+    <strong dir="ltr">Development</strong>@Ui.Text(".", " environment.")
+    @Ui.Text("لا تفعّل هذه البيئة في التطبيقات المنشورة لأنها قد تعرض معلومات حساسة للمستخدمين.",
+        "Don't use it for published apps, because it can show sensitive information to users.")
 </p>
 
-<a class="btn btn-primary" href="">الصفحة الرئيسية</a>
+<a class="btn btn-primary" href="">@Ui.Text("الصفحة الرئيسية", "Home page")</a>
 
 @code{
     [CascadingParameter] private HttpContext? HttpContext { get; set; }

@@ -1,7 +1,7 @@
 @inherits LayoutComponentBase
 
-@* With dir="rtl" the sidebar (first flex item) sits on the right. This layout never subscribes to draft
-   changes: the live parts (navigation, top bar) update on their own. *@
+@* The sidebar is the first flex item, so it sits at the start: on the right in Arabic and on the left in English. This
+   layout never subscribes to draft changes: the live parts (navigation, top bar) update on their own. *@
 <div class="page">
     <div class="sidebar">
         <NavMenu/>
@@ -17,9 +17,12 @@
                 </ChildContent>
                 <ErrorContent>
                     <div class="alert alert-danger" role="alert">
-                        <h1 class="h4">حدث خطأ غير متوقع في هذه الصفحة</h1>
-                        <p>تُحفظ مسودتك تلقائيًا في هذا المتصفح. انتقل إلى صفحة أخرى أو أعد تحميل الصفحة للمتابعة.</p>
-                        <a class="btn btn-outline-danger btn-sm" href="">الصفحة الرئيسية</a>
+                        <h1 class="h4">@Ui.Text("حدث خطأ غير متوقع في هذه الصفحة", "An unexpected error occurred on this page")</h1>
+                        <p>
+                            @Ui.Text("تُحفظ مسودتك تلقائيًا في هذا المتصفح. انتقل إلى صفحة أخرى أو أعد تحميل الصفحة للمتابعة.",
+                                "Your draft is saved automatically in this browser. Go to another page or reload this one to continue.")
+                        </p>
+                        <a class="btn btn-outline-danger btn-sm" href="">@Ui.Text("الصفحة الرئيسية", "Home page")</a>
                     </div>
                 </ErrorContent>
             </ErrorBoundary>
@@ -28,9 +31,9 @@
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
-    حدث خطأ غير متوقع.
-    <a href="." class="reload">إعادة تحميل الصفحة</a>
-    <span class="dismiss" role="button" aria-label="إغلاق">×</span>
+    @Ui.Text("حدث خطأ غير متوقع.", "An unexpected error occurred.")
+    <a href="." class="reload">@Ui.Text("إعادة تحميل الصفحة", "Reload the page")</a>
+    <span class="dismiss" role="button" aria-label="@Ui.Text("إغلاق", "Close")">×</span>
 </div>
 
 @code {
