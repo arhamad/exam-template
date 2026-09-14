@@ -19,4 +19,12 @@ public class DemoExamsTests
     [Fact]
     public void Computer_logic_design_is_deterministic() =>
         Assert.Equal(ExamJson.Serialize(DemoExams.ComputerLogicDesign()), ExamJson.Serialize(DemoExams.ComputerLogicDesign()));
+
+    [Fact]
+    public void Edge_cases_have_no_validation_errors()
+    {
+        var report = ExamValidator.Validate(DemoExams.EdgeCases());
+
+        Assert.False(report.HasErrors, string.Join("; ", report.Issues.Select(issue => issue.Message)));
+    }
 }

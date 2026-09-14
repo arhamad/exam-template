@@ -5,6 +5,9 @@ namespace ExamTemplate.Documents.Demo;
 /// <summary>Sample exams for the "load sample" action and for tests. Ids are fixed so shuffles are reproducible.</summary>
 public static class DemoExams
 {
+    private static readonly string LongQuestion = string.Join(" ",
+        Enumerable.Repeat("هذا نص سؤال طويل جدًا يُستخدم لاختبار التفاف الأسطر وتقسيم الصفحات في ملفات Word وPDF.", 22));
+
     public static ExamDefinition ComputerLogicDesign() => new()
     {
         Header = new ExamHeader
@@ -60,6 +63,51 @@ public static class DemoExams
                         ["RAM", "ROM", "Register", "Cache"]),
                     Essay(3, 2, 20, "اذكر/ي الخصائص الأساسية لمسجلات الإزاحة، ثم وضّح/ي أحد استخداماتها العملية.", lines: 6,
                         "تنقل مسجلات الإزاحة البيانات بتًا بعد بت يمينًا أو يسارًا، ومن تطبيقاتها التحويل بين الإرسال المتوازي والمتوالي."),
+                ],
+            },
+        ],
+    };
+
+    /// <summary>Rendering stress cases: very long text, eight long options, 20 answer lines, mixed scripts and markdown-like characters.</summary>
+    public static ExamDefinition EdgeCases() => new()
+    {
+        Header = new ExamHeader
+        {
+            CourseName = "مقرر الحالات الخاصة (Edge Cases)",
+            CourseCode = "CS-101",
+            Semester = "",
+            AcademicYear = "2026/2027",
+            Duration = "ساعتان",
+            ExamMode = "",
+            ExamDate = new DateOnly(2027, 1, 15),
+        },
+        Instructions = [.. ExamDefinition.DefaultInstructions, "اكتب/ي الرموز كما هي: x_1 + x_2 ≤ 2³ و 5*4*2 = 40 و {{CourseName}}."],
+        VersionCount = 2,
+        ShuffleSeed = 2026,
+        Sections =
+        [
+            new ExamSection
+            {
+                Id = Id(1),
+                Questions =
+                [
+                    Choice(1, 1, 5, LongQuestion, correct: 7,
+                        Enumerable.Range(1, 8).Select(number => $"الخيار الطويل رقم {number} الذي يتجاوز ثلاثين حرفًا بوضوح").ToArray()),
+                    Choice(1, 2, 2.5m, "في القلاب SR (Set = 1)، ما قيمة الخرج Q عندما x_1 = 0؟", correct: 1, ["0", "1", "Q'", "غير معرّف"]),
+                    TrueFalse(1, 3, 1, "العبارة **مهمة** و __ليست__ ~~محذوفة~~ و *مائلة*.", answer: false),
+                    Essay(1, 4, 20, "اكتب/ي برنامجًا يطبع الأعداد من 1 إلى 20،\nثم اشرح/ي كل سطر فيه.", lines: 20,
+                        "for (var i = 1; i <= 20; i++) Console.WriteLine(i);"),
+                    Essay(1, 5, 7.25m, "سؤال بلا أسطر إجابة؛ تُكتب الإجابة في دفتر منفصل.", lines: 0, "إجابة مختصرة."),
+                ],
+            },
+            new ExamSection
+            {
+                Id = Id(2),
+                Title = "قسم له عنوان فقط",
+                Questions =
+                [
+                    TrueFalse(2, 1, 3, "الرقم 2026 عدد زوجي.", answer: true),
+                    Choice(2, 2, 4, "اختر/ي الإجابة الصحيحة:", correct: 2, ["الأولى", "الثانية", "الثالثة"]),
                 ],
             },
         ],

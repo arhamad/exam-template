@@ -12,3 +12,6 @@ TestResults/
 # OS / Office temp files
 .DS_Store
 ~$*
+
+# Claude Code agent worktrees
+.claude/
