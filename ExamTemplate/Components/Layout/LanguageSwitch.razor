@@ -7,21 +7,21 @@
 @* Needs a live circuit, so the static error page doesn't show it. *@
 @if (RendererInfo.IsInteractive)
 {
-    <button type="button" class="btn btn-outline-secondary btn-sm language-switch" disabled="@switching"
+    <button type="button" class="btn btn-outline-secondary btn-sm language-switch" disabled="@_switching"
             title="@Ui.Text("عرض الواجهة بالإنجليزية", "Show the interface in Arabic")" @onclick="SwitchAsync">
         <span lang="@UiLanguageCookie.Code(Target)">@(Target == UiLanguage.English ? "English" : "العربية")</span>
     </button>
 }
 
 @code {
-    private bool switching;
-    private bool reloadPending;
+    private bool _switching;
+    private bool _reloadPending;
 
     private UiLanguage Target => Ui.IsEnglish ? UiLanguage.Arabic : UiLanguage.English;
 
     private async Task SwitchAsync()
     {
-        switching = true;
+        _switching = true;
         try
         {
             // The reload starts a new circuit that restores the draft from localStorage, so save the last edits first.
@@ -37,7 +37,7 @@
 
             await Browser.SetUiLanguageAsync(Target);
             Draft.SuppressLeavePrompt();
-            reloadPending = true;
+            _reloadPending = true;
         }
         catch (JSDisconnectedException)
         {
@@ -45,17 +45,17 @@
         }
         finally
         {
-            switching = reloadPending;
+            _switching = _reloadPending;
         }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!reloadPending)
+        if (!_reloadPending)
             return;
 
         // Reload only after this render reached the browser, so NavigationLock has removed the "leave site?" prompt.
-        reloadPending = false;
+        _reloadPending = false;
         await Task.Yield();
         Navigation.Refresh(forceReload: true);
     }
