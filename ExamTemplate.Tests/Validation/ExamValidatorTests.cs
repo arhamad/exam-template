@@ -323,15 +323,104 @@ public class ExamValidatorTests
     }
 
     [Fact]
-    public void Messages_number_questions_continuously_across_sections()
+    public void Messages_name_the_question_by_its_label_and_section()
     {
         var exam = TestExams.TwoSections();
         exam.Sections[1].Questions[0].Text = "";
 
         var message = SingleError(exam).Message;
 
-        Assert.Contains("السؤال 4", message.Arabic);
-        Assert.Contains("question 4", message.English);
+        Assert.Equal("نص السؤال 1 من القسم 2 مطلوب.", message.Arabic);
+        Assert.Equal("The text of question 1 of section 2 is required.", message.English);
+    }
+
+    [Fact]
+    public void Messages_use_letters_in_essay_only_sections()
+    {
+        var exam = TestExams.TwoSections();
+        exam.Sections[1].Questions = [TestExams.Essay("فرع", 5, 3, "إجابة"), TestExams.Essay("", 5, 3, "إجابة")];
+
+        var message = SingleError(exam).Message;
+
+        Assert.Contains("السؤال ب من القسم 2", message.Arabic);
+        // Letters follow the exam, whichever language the interface shows the message in.
+        Assert.Contains("question ب of section 2", message.English);
+    }
+
+    [Fact]
+    public void Messages_name_the_only_question_of_a_single_essay_section()
+    {
+        var exam = TestExams.TwoSections();
+        exam.Sections[1].Questions = [TestExams.Essay("", 10, 3, "إجابة")];
+
+        var message = SingleError(exam).Message;
+
+        Assert.Equal("نص السؤال الوحيد في القسم 2 مطلوب.", message.Arabic);
+        Assert.Equal("The text of the only question in section 2 is required.", message.English);
+    }
+
+    [Fact]
+    public void Alternative_flag_on_the_last_section_is_an_error()
+    {
+        var exam = TestExams.Valid();
+        exam.Sections[0].AlternativeToNext = true;
+
+        var issue = SingleError(exam);
+
+        Assert.Equal(nameof(ExamSection.AlternativeToNext), issue.Field);
+        Assert.Equal(exam.Sections[0].Id, issue.SectionId);
+        Assert.Contains("القسم 1 هو الأخير", issue.Message.Arabic);
+        Assert.Contains("Section 1 is the last one", issue.Message.English);
+    }
+
+    [Fact]
+    public void Consecutive_alternative_flags_are_an_error_on_the_second_section()
+    {
+        var exam = ThreeEqualSections();
+        exam.Sections[0].AlternativeToNext = true;
+        exam.Sections[1].AlternativeToNext = true;
+
+        var issue = SingleError(exam);
+
+        Assert.Equal(nameof(ExamSection.AlternativeToNext), issue.Field);
+        Assert.Equal(exam.Sections[1].Id, issue.SectionId);
+        Assert.Contains("القسم 2 بديل للقسم 1 أصلًا", issue.Message.Arabic);
+        Assert.Contains("Section 2 is already the alternative of section 1", issue.Message.English);
+    }
+
+    [Fact]
+    public void Alternative_sections_with_different_marks_are_an_error()
+    {
+        var exam = TestExams.TwoSections();
+        exam.Sections[0].AlternativeToNext = true;
+
+        var issue = SingleError(exam);
+
+        Assert.Equal(nameof(ExamSection.AlternativeToNext), issue.Field);
+        Assert.Equal(exam.Sections[0].Id, issue.SectionId);
+        Assert.Equal("علامات القسم 1 (30 علامة) تختلف عن علامات القسم 2 (10 علامات)؛ يجب أن تتساوى لأن الطالب يجيب عن أحدهما.", issue.Message.Arabic);
+        Assert.Equal("Section 1 (30 marks) and section 2 (10 marks) must be worth the same marks because the student answers only one of them.", issue.Message.English);
+    }
+
+    [Fact]
+    public void Alternative_pair_with_equal_marks_is_valid()
+    {
+        var exam = TestExams.TwoSections();
+        exam.Sections[1].Questions.ForEach(question => question.Marks = 15);
+        exam.Sections[0].AlternativeToNext = true;
+
+        Assert.Empty(ExamValidator.Validate(exam).Issues);
+    }
+
+    [Fact]
+    public void Two_separate_pairs_are_valid()
+    {
+        var exam = ThreeEqualSections();
+        exam.Sections.Add(new ExamSection { Title = "القسم الرابع", Questions = [TestExams.TrueFalse("عبارة", 5, true)] });
+        exam.Sections[0].AlternativeToNext = true;
+        exam.Sections[2].AlternativeToNext = true;
+
+        Assert.Empty(ExamValidator.Validate(exam).Issues);
     }
 
     [Fact]
@@ -348,7 +437,7 @@ public class ExamValidatorTests
 
         // Every rule fires at least once. Numbers and letters vary between issues of the same kind.
         var kinds = issues.Select(issue => Regex.Replace(issue.Message.English, @"\d+|\([A-H]\)", "#")).Distinct().ToList();
-        Assert.Equal(29, kinds.Count);
+        Assert.Equal(32, kinds.Count);
         Assert.All(issues, issue =>
         {
             Assert.DoesNotContain(issue.Message.English, IsArabic);
@@ -399,6 +488,24 @@ public class ExamValidatorTests
             Instruction = new string('x', ExamLimits.MaxInstructionLength + 1),
         });
         exam.Sections.AddRange(Enumerable.Range(0, ExamLimits.MaxSections).Select(_ => new ExamSection()));
+
+        // Alternative pairs: marks that differ (section 1), a chain (section 2) and a flag on the last section.
+        exam.Sections[0].AlternativeToNext = true;
+        exam.Sections[1].AlternativeToNext = true;
+        exam.Sections[^1].AlternativeToNext = true;
+        return exam;
+    }
+
+    /// <summary>Three sections worth 5 marks each, so alternative pairs among them have equal marks.</summary>
+    private static ExamDefinition ThreeEqualSections()
+    {
+        var exam = TestExams.Valid();
+        exam.Sections =
+        [
+            new ExamSection { Title = "القسم الأول", Questions = [TestExams.TrueFalse("عبارة أولى", 5, true)] },
+            new ExamSection { Title = "القسم الثاني", Questions = [TestExams.TrueFalse("عبارة ثانية", 5, false)] },
+            new ExamSection { Title = "القسم الثالث", Questions = [TestExams.TrueFalse("عبارة ثالثة", 5, true)] },
+        ];
         return exam;
     }
 

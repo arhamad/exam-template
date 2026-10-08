@@ -124,11 +124,11 @@ public static class ExamValidator
                 nameof(ExamDefinition.Sections)));
         }
 
-        var number = 0;
         for (var sectionIndex = 0; sectionIndex < exam.Sections.Count; sectionIndex++)
         {
             var section = exam.Sections[sectionIndex];
             var sectionNumber = sectionIndex + 1;
+            var labels = ItemLabels.For(section, exam.Language);
 
             if (section.Title.Length > ExamLimits.MaxSectionTitleLength)
             {
@@ -154,14 +154,59 @@ public static class ExamValidator
                     nameof(ExamSection.Questions), section.Id));
             }
 
-            foreach (var question in section.Questions)
-                ValidateQuestion(exam, section, question, ++number, issues);
+            if (section.AlternativeToNext)
+                ValidateAlternative(exam, sectionIndex, issues);
+
+            for (var index = 0; index < section.Questions.Count; index++)
+                ValidateQuestion(exam, section, section.Questions[index], Place(labels, index, sectionNumber), issues);
         }
 
         WarnAboutClusteredAnswers(exam, issues);
     }
 
-    private static void ValidateQuestion(ExamDefinition exam, ExamSection section, ExamQuestion question, int number,
+    // The student answers this section or the next one: there must be a next one, a section can't be in two pairs,
+    // and both must be worth the same marks since only one of them counts.
+    private static void ValidateAlternative(ExamDefinition exam, int sectionIndex, List<ValidationIssue> issues)
+    {
+        var section = exam.Sections[sectionIndex];
+        var number = sectionIndex + 1;
+        var field = nameof(ExamSection.AlternativeToNext);
+
+        if (sectionIndex == exam.Sections.Count - 1)
+        {
+            issues.Add(Error(
+                $"القسم {number} هو الأخير، فلا يمكن أن يكون بديلًا لقسم يليه؛ ألغِ الخيار أو أضف القسم البديل بعده.",
+                $"Section {number} is the last one, so it can't be an alternative to the next section; turn the option off or add the alternative section after it.",
+                field, section.Id));
+        }
+        else if (sectionIndex > 0 && exam.Sections[sectionIndex - 1].AlternativeToNext)
+        {
+            issues.Add(Error(
+                $"القسم {number} بديل للقسم {number - 1} أصلًا، فلا يمكن أن يكون بديلًا للقسم التالي أيضًا؛ يضم كل اختيار قسمين فقط.",
+                $"Section {number} is already the alternative of section {number - 1}, so it can't be an alternative to the next section too; a choice holds two sections only.",
+                field, section.Id));
+        }
+        else if (section.TotalMarks() != exam.Sections[sectionIndex + 1].TotalMarks())
+        {
+            var marks = section.TotalMarks();
+            var nextMarks = exam.Sections[sectionIndex + 1].TotalMarks();
+            issues.Add(Error(
+                $"علامات القسم {number} ({ArabicText.Marks(marks)}) تختلف عن علامات القسم {number + 1} ({ArabicText.Marks(nextMarks)})؛ يجب أن تتساوى لأن الطالب يجيب عن أحدهما.",
+                $"Section {number} ({EnglishText.Marks(marks)}) and section {number + 1} ({EnglishText.Marks(nextMarks)}) must be worth the same marks because the student answers only one of them.",
+                field, section.Id));
+        }
+    }
+
+    /// <summary>How messages refer to a question: «السؤال ب من القسم 2», or «السؤال الوحيد في القسم 4» for a lone essay.</summary>
+    private static LocalizedText Place(ItemLabels labels, int index, int sectionNumber)
+    {
+        var label = labels.Label(index);
+        return label.Length > 0
+            ? new LocalizedText($"السؤال {label} من القسم {sectionNumber}", $"question {label} of section {sectionNumber}")
+            : new LocalizedText($"السؤال الوحيد في القسم {sectionNumber}", $"the only question in section {sectionNumber}");
+    }
+
+    private static void ValidateQuestion(ExamDefinition exam, ExamSection section, ExamQuestion question, LocalizedText place,
         List<ValidationIssue> issues)
     {
         void Add(IssueSeverity severity, string arabic, string english, string field, Guid? optionId = null) =>
@@ -169,14 +214,14 @@ public static class ExamValidator
 
         if (string.IsNullOrWhiteSpace(question.Text))
         {
-            Add(IssueSeverity.Error, $"نص السؤال {number} مطلوب.", $"The text of question {number} is required.",
+            Add(IssueSeverity.Error, $"نص {place.Arabic} مطلوب.", $"The text of {place.English} is required.",
                 nameof(ExamQuestion.Text));
         }
         else if (question.Text.Length > ExamLimits.MaxQuestionTextLength)
         {
             Add(IssueSeverity.Error,
-                $"نص السؤال {number} أطول من الحد المسموح به ({ExamLimits.MaxQuestionTextLength} حرف).",
-                $"The text of question {number} is longer than the limit ({ExamLimits.MaxQuestionTextLength} characters).",
+                $"نص {place.Arabic} أطول من الحد المسموح به ({ExamLimits.MaxQuestionTextLength} حرف).",
+                $"The text of {place.English} is longer than the limit ({ExamLimits.MaxQuestionTextLength} characters).",
                 nameof(ExamQuestion.Text));
         }
 
@@ -184,29 +229,29 @@ public static class ExamValidator
             || decimal.Round(question.Marks, ExamLimits.MarksDecimals) != question.Marks)
         {
             Add(IssueSeverity.Error,
-                $"علامة السؤال {number} يجب أن تكون أكبر من صفر ولا تتجاوز {ArabicText.Number(ExamLimits.MaxMarks)}، بمنزلتين عشريتين على الأكثر.",
-                $"The marks for question {number} must be more than zero and at most {ArabicText.Number(ExamLimits.MaxMarks)}, with at most two decimal places.",
+                $"علامة {place.Arabic} يجب أن تكون أكبر من صفر ولا تتجاوز {ArabicText.Number(ExamLimits.MaxMarks)}، بمنزلتين عشريتين على الأكثر.",
+                $"The marks for {place.English} must be more than zero and at most {ArabicText.Number(ExamLimits.MaxMarks)}, with at most two decimal places.",
                 nameof(ExamQuestion.Marks));
         }
 
         if (question.Note.Length > ExamLimits.MaxNoteLength)
         {
             Add(IssueSeverity.Error,
-                $"ملاحظة السؤال {number} أطول من الحد المسموح به ({ExamLimits.MaxNoteLength} حرف).",
-                $"The note for question {number} is longer than the limit ({ExamLimits.MaxNoteLength} characters).",
+                $"ملاحظة {place.Arabic} أطول من الحد المسموح به ({ExamLimits.MaxNoteLength} حرف).",
+                $"The note for {place.English} is longer than the limit ({ExamLimits.MaxNoteLength} characters).",
                 nameof(ExamQuestion.Note));
         }
 
         switch (question.Type)
         {
             case QuestionType.MultipleChoice:
-                ValidateOptions(exam, question, number, Add);
+                ValidateOptions(exam, question, place, Add);
                 break;
 
             case QuestionType.TrueFalse when question.TrueFalseAnswer is null:
                 Add(IssueSeverity.Error,
-                    $"حدّد إن كانت عبارة السؤال {number} صحيحة أم خاطئة.",
-                    $"Choose whether the statement in question {number} is true or false.",
+                    $"حدّد إن كانت عبارة {place.Arabic} صحيحة أم خاطئة.",
+                    $"Choose whether the statement in {place.English} is true or false.",
                     nameof(ExamQuestion.TrueFalseAnswer));
                 break;
 
@@ -214,23 +259,23 @@ public static class ExamValidator
                 if (question.AnswerLines is < ExamLimits.MinAnswerLines or > ExamLimits.MaxAnswerLines)
                 {
                     Add(IssueSeverity.Error,
-                        $"عدد أسطر الإجابة للسؤال {number} يجب أن يكون بين {ExamLimits.MinAnswerLines} و{ExamLimits.MaxAnswerLines}.",
-                        $"The number of answer lines for question {number} must be between {ExamLimits.MinAnswerLines} and {ExamLimits.MaxAnswerLines}.",
+                        $"عدد أسطر إجابة {place.Arabic} يجب أن يكون بين {ExamLimits.MinAnswerLines} و{ExamLimits.MaxAnswerLines}.",
+                        $"The number of answer lines in {place.English} must be between {ExamLimits.MinAnswerLines} and {ExamLimits.MaxAnswerLines}.",
                         nameof(ExamQuestion.AnswerLines));
                 }
 
                 if (question.ModelAnswer.Length > ExamLimits.MaxModelAnswerLength)
                 {
                     Add(IssueSeverity.Error,
-                        $"الإجابة النموذجية للسؤال {number} أطول من الحد المسموح به ({ExamLimits.MaxModelAnswerLength} حرف).",
-                        $"The model answer for question {number} is longer than the limit ({ExamLimits.MaxModelAnswerLength} characters).",
+                        $"الإجابة النموذجية في {place.Arabic} أطول من الحد المسموح به ({ExamLimits.MaxModelAnswerLength} حرف).",
+                        $"The model answer in {place.English} is longer than the limit ({ExamLimits.MaxModelAnswerLength} characters).",
                         nameof(ExamQuestion.ModelAnswer));
                 }
                 else if (string.IsNullOrWhiteSpace(question.ModelAnswer))
                 {
                     Add(IssueSeverity.Warning,
-                        $"لا توجد إجابة نموذجية للسؤال {number}؛ لن يظهر له شيء في مفتاح الإجابة.",
-                        $"Question {number} has no model answer; nothing will appear for it in the answer key.",
+                        $"{place.Arabic} بلا إجابة نموذجية؛ لن يظهر له شيء في مفتاح الإجابة.",
+                        $"There is no model answer for {place.English}; nothing will appear for it in the answer key.",
                         nameof(ExamQuestion.ModelAnswer));
                 }
 
@@ -238,7 +283,7 @@ public static class ExamValidator
         }
     }
 
-    private static void ValidateOptions(ExamDefinition exam, ExamQuestion question, int number,
+    private static void ValidateOptions(ExamDefinition exam, ExamQuestion question, LocalizedText place,
         Action<IssueSeverity, string, string, string, Guid?> add)
     {
         var options = question.Options;
@@ -246,8 +291,8 @@ public static class ExamValidator
         if (options.Count is < ExamLimits.MinOptions or > ExamLimits.MaxOptions)
         {
             add(IssueSeverity.Error,
-                $"يجب أن يحتوي السؤال {number} على {ExamLimits.MinOptions} إلى {ExamLimits.MaxOptions} خيارات.",
-                $"Question {number} must have {ExamLimits.MinOptions} to {ExamLimits.MaxOptions} options.",
+                $"يجب أن يحتوي {place.Arabic} على {ExamLimits.MinOptions} إلى {ExamLimits.MaxOptions} خيارات.",
+                $"There must be {ExamLimits.MinOptions} to {ExamLimits.MaxOptions} options in {place.English}.",
                 nameof(ExamQuestion.Options), null);
             return;
         }
@@ -258,14 +303,14 @@ public static class ExamValidator
             var label = wording.OptionLabel(index);
             if (string.IsNullOrWhiteSpace(option.Text))
             {
-                add(IssueSeverity.Error, $"الخيار ({label}) في السؤال {number} فارغ.", $"Option ({label}) in question {number} is empty.",
+                add(IssueSeverity.Error, $"الخيار ({label}) في {place.Arabic} فارغ.", $"Option ({label}) in {place.English} is empty.",
                     "OptionText", option.Id);
             }
             else if (option.Text.Length > ExamLimits.MaxOptionTextLength)
             {
                 add(IssueSeverity.Error,
-                    $"الخيار ({label}) في السؤال {number} أطول من الحد المسموح به ({ExamLimits.MaxOptionTextLength} حرف).",
-                    $"Option ({label}) in question {number} is longer than the limit ({ExamLimits.MaxOptionTextLength} characters).",
+                    $"الخيار ({label}) في {place.Arabic} أطول من الحد المسموح به ({ExamLimits.MaxOptionTextLength} حرف).",
+                    $"Option ({label}) in {place.English} is longer than the limit ({ExamLimits.MaxOptionTextLength} characters).",
                     "OptionText", option.Id);
             }
         }
@@ -273,14 +318,14 @@ public static class ExamValidator
         var correctCount = options.Count(option => option.IsCorrect);
         if (correctCount == 0)
         {
-            add(IssueSeverity.Error, $"حدّد الإجابة الصحيحة للسؤال {number}.", $"Choose the correct answer for question {number}.",
+            add(IssueSeverity.Error, $"حدّد الإجابة الصحيحة في {place.Arabic}.", $"Choose the correct answer in {place.English}.",
                 "CorrectOption", null);
         }
         else if (correctCount > 1)
         {
             add(IssueSeverity.Error,
-                $"للسؤال {number} أكثر من إجابة صحيحة؛ حدّد إجابة واحدة فقط.",
-                $"Question {number} has more than one correct answer; choose only one.",
+                $"{place.Arabic} له أكثر من إجابة صحيحة؛ حدّد إجابة واحدة فقط.",
+                $"There is more than one correct answer in {place.English}; choose only one.",
                 "CorrectOption", null);
         }
 
@@ -288,8 +333,8 @@ public static class ExamValidator
         if (texts.Distinct(StringComparer.OrdinalIgnoreCase).Count() != texts.Count)
         {
             add(IssueSeverity.Warning,
-                $"يوجد خياران متطابقان أو أكثر في السؤال {number}.",
-                $"Question {number} has two or more identical options.",
+                $"يوجد خياران متطابقان أو أكثر في {place.Arabic}.",
+                $"Two or more options in {place.English} are identical.",
                 nameof(ExamQuestion.Options), null);
         }
 
@@ -297,8 +342,8 @@ public static class ExamValidator
                 PositionDependentPhrases.Any(phrase => option.Text.Contains(phrase, StringComparison.OrdinalIgnoreCase))))
         {
             add(IssueSeverity.Warning,
-                $"يبدو أن خيارات السؤال {number} تعتمد على ترتيبها (مثل «جميع ما سبق»)؛ فعّل «الحفاظ على ترتيب الخيارات عند الخلط».",
-                $"The options of question {number} seem to depend on their order (such as “All of the above”); turn on “Keep option order when shuffling”.",
+                $"يبدو أن خيارات {place.Arabic} تعتمد على ترتيبها (مثل «جميع ما سبق»)؛ فعّل «الحفاظ على ترتيب الخيارات عند الخلط».",
+                $"The options of {place.English} seem to depend on their order (such as “All of the above”); turn on “Keep option order when shuffling”.",
                 nameof(ExamQuestion.KeepOptionOrder), null);
         }
     }
