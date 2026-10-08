@@ -9,6 +9,7 @@
     var dir = ExamContent.Dir(Exam.Language);
     var lang = ExamContent.Lang(Exam.Language);
     var number = Index + 1;
+    var labels = ItemLabels.For(Section, Exam.Language);
 }
 
 <section id="@SectionId" class="exam-section focus-target" tabindex="-1" aria-labelledby="@($"{SectionId}-heading")">
@@ -70,7 +71,7 @@
         {
             var question = Section.Questions[index];
             <QuestionCard @key="question.Id" Exam="Exam" Section="Section" Question="question"
-                          Number="FirstNumber + index" IndexInSection="index" OnStructureChanged="OnStructureChanged"/>
+                          Label="@labels.Label(index)" IndexInSection="index" OnStructureChanged="OnStructureChanged"/>
         }
     </div>
 
@@ -103,9 +104,6 @@
 
     /// <summary>Zero-based position of the section.</summary>
     [Parameter] public int Index { get; set; }
-
-    /// <summary>Number of the section's first question (numbering continues across sections).</summary>
-    [Parameter] public int FirstNumber { get; set; } = 1;
 
     /// <summary>Raised after a structural edit with the id of the element to focus once the page re-renders.</summary>
     [Parameter] public EventCallback<string?> OnStructureChanged { get; set; }
