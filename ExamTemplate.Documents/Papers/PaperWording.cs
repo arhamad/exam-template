@@ -39,6 +39,13 @@ public sealed class PaperWording
         FalseWord = ArabicText.TrueFalse(false),
         OptionLabels = ["أ", "ب", "ج", "د", "هـ", "و", "ز", "ح"],
         VersionLetters = ["أ", "ب", "ج", "د"],
+        ItemLetters =
+        [
+            "أ", "ب", "ج", "د", "هـ", "و", "ز", "ح", "ط", "ي", "ك", "ل", "م", "ن",
+            "س", "ع", "ف", "ص", "ق", "ر", "ش", "ت", "ث", "خ", "ذ", "ض", "ظ", "غ",
+        ],
+        QuestionWord = "السؤال",
+        ChoiceNoticeFormat = "أجب عن أحد السؤالين الآتيين فقط: {0} أو {1}.",
     };
 
     public static PaperWording English { get; } = new()
@@ -72,6 +79,9 @@ public sealed class PaperWording
         FalseWord = "False",
         OptionLabels = ["A", "B", "C", "D", "E", "F", "G", "H"],
         VersionLetters = ["A", "B", "C", "D"],
+        ItemLetters = [.. "abcdefghijklmnopqrstuvwxyz".Select(letter => letter.ToString())],
+        QuestionWord = "Question",
+        ChoiceNoticeFormat = "Answer only ONE of the following two questions: {0} or {1}.",
     };
 
     private PaperWording()
@@ -118,6 +128,12 @@ public sealed class PaperWording
     private string FalseWord { get; init; } = "";
     private IReadOnlyList<string> OptionLabels { get; init; } = [];
     private IReadOnlyList<string> VersionLetters { get; init; } = [];
+    private IReadOnlyList<string> ItemLetters { get; init; } = [];
+    private string QuestionWord { get; init; } = "";
+    private string ChoiceNoticeFormat { get; init; } = "";
+
+    /// <summary>How many essay parts can be lettered («أ» … «غ», "a" … "z") before a section falls back to numbers.</summary>
+    public int ItemLetterCount => ItemLetters.Count;
 
     public static PaperWording For(ExamLanguage language) => language switch
     {
@@ -136,6 +152,16 @@ public sealed class PaperWording
     public string OptionLabel(int index) => OptionLabels[CheckIndex(index, OptionLabels.Count)];
 
     public string VersionLetter(int index) => VersionLetters[CheckIndex(index, VersionLetters.Count)];
+
+    /// <summary>The letter of an essay part: abjad order in Arabic, lowercase in English, unlike the uppercase option labels.</summary>
+    public string ItemLetter(int index) => ItemLetters[CheckIndex(index, ItemLetters.Count)];
+
+    /// <summary>The generated name of the main question at a zero-based position: «السؤال الخامس» or "Question 5".</summary>
+    public string SectionName(int index) =>
+        $"{QuestionWord} {(IsRightToLeft ? ArabicText.Ordinal(index + 1) : ArabicText.Number(index + 1))}";
+
+    /// <summary>The notice printed before the first of two alternative sections, naming both by position.</summary>
+    public string ChoiceNotice(int firstIndex) => string.Format(ChoiceNoticeFormat, SectionName(firstIndex), SectionName(firstIndex + 1));
 
     /// <summary>«النموذج أ» or "Version A".</summary>
     public string VersionName(string letter) => $"{Version} {letter}";

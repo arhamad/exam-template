@@ -15,6 +15,7 @@ public class UiTextTests
         Assert.Equal("الأسئلة", ui.Text("الأسئلة", "Questions"));
         Assert.Equal("سؤالان، علامتان", ui.Join([ui.Questions(2), ui.Marks(2)]));
         Assert.Equal("خطأ واحد", ui.Errors(1));
+        Assert.Equal("33 بندًا", ui.Items(33));
         Assert.Equal("صح", ui.TrueFalse(true));
         Assert.Equal(ExamLanguage.Arabic, ui.NewExamLanguage);
     }
@@ -30,6 +31,7 @@ public class UiTextTests
         Assert.Equal("The file", ui.Text(new LocalizedText("الملف", "The file")));
         Assert.Equal("2 questions, 2 marks", ui.Join([ui.Questions(2), ui.Marks(2)]));
         Assert.Equal("1 error", ui.Errors(1));
+        Assert.Equal("1 item", ui.Items(1));
         Assert.Equal("Essay", ui.TypeLabel(QuestionType.Essay));
         Assert.Equal("False", ui.TrueFalse(false));
         Assert.Equal("en-GB", ui.DateLocale);

@@ -18,6 +18,20 @@ public static class ArabicText
     public static string Errors(int count) =>
         Counted(count, one: "خطأ واحد", two: "خطآن", few: "أخطاء", many: "خطأً", hundreds: "خطأ");
 
+    /// <summary>Items of a main question, as counted in the editor («33 بندًا»).</summary>
+    public static string Items(int count) =>
+        Counted(count, one: "بند واحد", two: "بندان", few: "بنود", many: "بندًا", hundreds: "بند");
+
+    private static readonly string[] Ordinals =
+    [
+        "الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس", "السابع", "الثامن", "التاسع", "العاشر",
+        "الحادي عشر", "الثاني عشر", "الثالث عشر", "الرابع عشر", "الخامس عشر", "السادس عشر", "السابع عشر", "الثامن عشر", "التاسع عشر", "العشرون",
+    ];
+
+    /// <summary>The masculine ordinal («الخامس») for 1–20, as in «السؤال الخامس»; the numeral beyond that.</summary>
+    public static string Ordinal(int number) =>
+        number >= 1 && number <= Ordinals.Length ? Ordinals[number - 1] : Number(number);
+
     public static string TypeLabel(QuestionType type) => type switch
     {
         QuestionType.MultipleChoice => "اختيار من متعدد",

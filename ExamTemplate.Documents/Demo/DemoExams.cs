@@ -1,4 +1,5 @@
 using ExamTemplate.Documents.Model;
+using ExamTemplate.Documents.Papers;
 
 namespace ExamTemplate.Documents.Demo;
 
@@ -150,7 +151,7 @@ public static class DemoExams
             AcademicYear = "2026/2027",
             Duration = "ساعتان",
         },
-        Instructions = [.. ExamDefaults.Arabic.Instructions, "أجب عن أحد السؤالين الآتيين فقط: السؤال الخامس أو السؤال السادس."],
+        Instructions = [.. ExamDefaults.Arabic.Instructions, PaperWording.Arabic.ChoiceNotice(4)],
         VersionCount = 2,
         ShuffleSeed = 2027,
         Sections =

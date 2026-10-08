@@ -67,6 +67,51 @@ public class PaperWordingTests
     }
 
     [Fact]
+    public void Item_letters_follow_abjad_order_in_arabic_and_lowercase_letters_in_english()
+    {
+        Assert.Equal(new[] { "أ", "ب", "ج", "د", "هـ", "و", "ز", "ح", "ط", "ي", "ك", "ل" }, Enumerable.Range(0, 12).Select(PaperWording.Arabic.ItemLetter));
+        Assert.Equal(28, PaperWording.Arabic.ItemLetterCount);
+        Assert.Equal("غ", PaperWording.Arabic.ItemLetter(27));
+        Assert.Equal("abcdefghijklmnopqrstuvwxyz", string.Concat(Enumerable.Range(0, 26).Select(PaperWording.English.ItemLetter)));
+        Assert.Equal(26, PaperWording.English.ItemLetterCount);
+    }
+
+    [Fact]
+    public void Item_letters_beyond_the_supported_range_throw()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => PaperWording.Arabic.ItemLetter(28));
+        Assert.Throws<ArgumentOutOfRangeException>(() => PaperWording.English.ItemLetter(26));
+    }
+
+    [Fact]
+    public void Section_names_use_ordinal_words_in_arabic_and_numerals_in_english()
+    {
+        Assert.Equal("السؤال الأول", PaperWording.Arabic.SectionName(0));
+        Assert.Equal("السؤال الخامس", PaperWording.Arabic.SectionName(4));
+        Assert.Equal("السؤال العشرون", PaperWording.Arabic.SectionName(19));
+        Assert.Equal("السؤال 21", PaperWording.Arabic.SectionName(20));
+        Assert.Equal("Question 1", PaperWording.English.SectionName(0));
+        Assert.Equal("Question 5", PaperWording.English.SectionName(4));
+    }
+
+    [Fact]
+    public void Choice_notice_names_the_two_sections_of_a_pair()
+    {
+        Assert.Equal("أجب عن أحد السؤالين الآتيين فقط: السؤال الخامس أو السؤال السادس.", PaperWording.Arabic.ChoiceNotice(4));
+        Assert.Equal("Answer only ONE of the following two questions: Question 2 or Question 3.", PaperWording.English.ChoiceNotice(1));
+    }
+
+    [Fact]
+    public void English_item_letters_and_names_contain_no_arabic_characters()
+    {
+        var texts = Enumerable.Range(0, PaperWording.English.ItemLetterCount).Select(PaperWording.English.ItemLetter)
+            .Concat(Enumerable.Range(0, ExamLimits.MaxSections).Select(PaperWording.English.SectionName))
+            .Append(PaperWording.English.ChoiceNotice(0));
+
+        Assert.All(texts, text => Assert.DoesNotContain(text, character => character is >= (char)0x0600 and <= (char)0x06FF));
+    }
+
+    [Fact]
     public void Versions_have_letters_in_the_exam_language_and_latin_letters_for_file_names()
     {
         Assert.Equal(new[] { "أ", "ب", "ج", "د" }, Enumerable.Range(0, 4).Select(PaperWording.Arabic.VersionLetter));
