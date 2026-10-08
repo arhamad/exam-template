@@ -41,6 +41,27 @@ public class TemplifyCapabilityTests
         Assert.Equal("T: أ | a / ب | b\nP: spacer 1\nT: أ | c\nP: spacer 2", Describe(Render(body, data)));
     }
 
+    public sealed record RowItem(string N1, string A1);
+
+    public sealed record GroupItem(string Heading, List<RowItem> Rows);
+
+    // The answer summary: a heading paragraph and a row-loop table for every group, inside one paragraph loop.
+    [Fact]
+    public void A_paragraph_loop_repeats_a_heading_and_a_row_loop_table_per_group()
+    {
+        var body = P("{{#foreach g in Groups}}")
+            + P("{{g.Heading}}")
+            + Tbl(2, Tr(P("{{#foreach r in g.Rows}}"), P("")), Tr(P("{{r.N1}}"), P("{{r.A1}}")), Tr(P("{{/foreach}}"), P("")))
+            + P("{{/foreach}}");
+        var data = Data(("Groups", new List<GroupItem>
+        {
+            new("First", [new("1", "ج"), new("2", "صح")]),
+            new("Second", [new("1", "ب")]),
+        }));
+
+        Assert.Equal("P: First\nT: 1 | ج / 2 | صح\nP: Second\nT: 1 | ب", Describe(Render(body, data)));
+    }
+
     [Fact]
     public void Conditionals_work_inside_a_table_cell()
     {

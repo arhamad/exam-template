@@ -43,7 +43,9 @@ public static class DesignTokens
     public const float InstructionSize = 10.5f;
     public const float SummaryTitleSize = 11f;
     public const float SummarySize = 10f;
+    public const float SummaryHeadingSize = SummarySize;
     public const float SectionTitleSize = 12f;
+    public const float ChoiceNoticeSize = SectionTitleSize;
     public const float SectionInstructionSize = 10f;
     public const float SectionMarksSize = 10f;
     public const float QuestionNumberSize = 12f;

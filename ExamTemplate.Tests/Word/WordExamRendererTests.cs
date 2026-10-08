@@ -21,6 +21,8 @@ public class WordExamRendererTests
         { nameof(DemoExams.EdgeCases), 1, PaperKind.AnswerKey },
         { nameof(DemoExams.ComputerLogicDesignEnglish), 0, PaperKind.Student },
         { nameof(DemoExams.ComputerLogicDesignEnglish), 1, PaperKind.AnswerKey },
+        { nameof(DemoExams.OptionalPair), 0, PaperKind.Student },
+        { nameof(DemoExams.OptionalPair), 1, PaperKind.AnswerKey },
     };
 
     [Theory]
@@ -162,6 +164,40 @@ public class WordExamRendererTests
     }
 
     [Fact]
+    public void Choice_notice_is_rendered_once_before_the_first_section_of_the_pair()
+    {
+        using var document = Open(Renderer.Render(Paper(nameof(DemoExams.OptionalPair), 0), PaperKind.Student));
+        var paragraphs = Paragraphs(document).Select(paragraph => (Style: StyleOf(paragraph), Text: TextOf(paragraph))).ToList();
+
+        // The demo also lists the notice among the exam instructions, so the styled paragraph is the one to find.
+        Assert.Equal(new[] { PaperWording.Arabic.ChoiceNotice(4) }, TextsOfStyle(document, "ExamChoiceNotice"));
+        var notice = paragraphs.FindIndex(paragraph => paragraph.Style == "ExamChoiceNotice");
+        Assert.InRange(notice,
+            paragraphs.FindIndex(paragraph => paragraph.Text == "السؤال الرابع: مسألة") + 1,
+            paragraphs.FindIndex(paragraph => paragraph.Text == "السؤال الخامس: تصميم دائرة توافقية") - 1);
+    }
+
+    [Fact]
+    public void Question_labels_follow_the_paper()
+    {
+        var paper = Paper(nameof(DemoExams.OptionalPair), 1);
+
+        using var document = Open(Renderer.Render(paper, PaperKind.Student));
+
+        Assert.Equal(
+            paper.Sections.SelectMany(section => section.Questions).Select(question => question.PrintedLabel),
+            TextsOfStyle(document, "ExamQuestionNumber"));
+    }
+
+    [Fact]
+    public void Answer_summary_shows_a_heading_per_section()
+    {
+        using var document = Open(Renderer.Render(Paper(nameof(DemoExams.OptionalPair), 1), PaperKind.AnswerKey));
+
+        Assert.Equal(new[] { "السؤال الأول: اختيار من متعدد", "السؤال الثاني: صح أم خطأ" }, TextsOfStyle(document, "ExamSummaryHeading"));
+    }
+
+    [Fact]
     public void English_answer_key_marks_every_correct_answer()
     {
         var paper = Paper(nameof(DemoExams.ComputerLogicDesignEnglish), 1);
@@ -220,6 +256,7 @@ public class WordExamRendererTests
         nameof(DemoExams.ComputerLogicDesign) => DemoExams.ComputerLogicDesign(),
         nameof(DemoExams.ComputerLogicDesignEnglish) => DemoExams.ComputerLogicDesignEnglish(),
         nameof(DemoExams.EdgeCases) => DemoExams.EdgeCases(),
+        nameof(DemoExams.OptionalPair) => DemoExams.OptionalPair(),
         _ => throw new ArgumentOutOfRangeException(nameof(exam)),
     }, version);
 
