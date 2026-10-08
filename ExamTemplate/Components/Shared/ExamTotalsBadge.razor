@@ -2,10 +2,18 @@
 
 @if (Draft.Exam is { } exam)
 {
-    var count = exam.QuestionCount();
-    <span class="totals-badge" title="@Ui.Text("عدد الأسئلة ومجموع العلامات", "Number of questions and total marks")">
+    var items = exam.QuestionCount();
+    <span class="totals-badge" title="@Ui.Text("عدد الأسئلة الرئيسية وعدد البنود ومجموع العلامات", "Number of main questions, items and total marks")">
         @* A comma, not a middle dot: next to digits a dot reads like the Arabic zero. *@
-        <span>@(count == 0 ? Ui.Text("لا توجد أسئلة", "No questions") : Ui.Questions(count))@Ui.Text("،", ",")</span>
+        @if (items == 0)
+        {
+            <span>@Ui.Text("لا توجد أسئلة", "No questions")@Ui.Text("،", ",")</span>
+        }
+        else
+        {
+            <span>@Ui.Questions(exam.MainQuestionCount())@Ui.Text("،", ",")</span>
+            <span>@Ui.Items(items)@Ui.Text("،", ",")</span>
+        }
         <span>@Ui.Text("المجموع:", "Total:") @Ui.Marks(exam.TotalMarks())</span>
     </span>
 }

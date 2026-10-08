@@ -57,7 +57,11 @@ else
                 </div>
                 <div>
                     <dt>@Ui.Text("المحتوى", "Content")</dt>
-                    <dd>@Ui.Join([questionCount == 0 ? Ui.Text("لا توجد أسئلة", "No questions") : Ui.Questions(questionCount), Ui.Marks(exam.TotalMarks())])</dd>
+                    <dd>
+                        @Ui.Join(questionCount == 0
+                            ? [Ui.Text("لا توجد أسئلة", "No questions"), Ui.Marks(exam.TotalMarks())]
+                            : [Ui.Questions(exam.MainQuestionCount()), Ui.Items(questionCount), Ui.Marks(exam.TotalMarks())])
+                    </dd>
                 </div>
                 <div>
                     <dt>@Ui.Text("آخر حفظ", "Last saved")</dt>

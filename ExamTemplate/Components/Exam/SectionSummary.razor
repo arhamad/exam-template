@@ -1,8 +1,8 @@
 @inherits DraftSubscriber
 
-@* Live question count and marks of one section; updates while marks are edited in the cards below. *@
+@* Live item count and marks of one section; updates while marks are edited in the cards below. *@
 <span class="section-summary">
-    @Ui.Join([Section.Questions.Count == 0 ? Ui.Text("لا توجد أسئلة", "No questions") : Ui.Questions(Section.Questions.Count), Ui.Marks(Section.TotalMarks())])
+    @Ui.Join([Section.Questions.Count == 0 ? Ui.Text("لا توجد أسئلة", "No questions") : Ui.Items(Section.Questions.Count), Ui.Marks(Section.TotalMarks())])
 </span>
 
 @code {
