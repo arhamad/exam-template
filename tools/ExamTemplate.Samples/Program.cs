@@ -15,6 +15,7 @@ var service = new ExamDocumentService();
     ("logic", DemoExams.ComputerLogicDesign()),
     ("logic-en", DemoExams.ComputerLogicDesignEnglish()),
     ("edge", DemoExams.EdgeCases()),
+    ("choice", DemoExams.OptionalPair()),
 ];
 
 foreach (var (name, exam) in exams)
