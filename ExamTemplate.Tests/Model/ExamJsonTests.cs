@@ -129,6 +129,20 @@ public class ExamJsonTests
     }
 
     [Fact]
+    public void Alternative_flag_round_trips_and_reads_as_false_when_missing()
+    {
+        var exam = TestExams.TwoSections();
+        exam.Sections[0].AlternativeToNext = true;
+
+        var json = ExamJson.Serialize(exam);
+
+        Assert.Contains("\"alternativeToNext\": true", json);
+        Assert.True(ExamJson.Deserialize(json).Sections[0].AlternativeToNext);
+        Assert.False(ExamJson.Deserialize(json).Sections[1].AlternativeToNext);
+        Assert.All(ExamJson.Deserialize(ExamJson.Serialize(TestExams.TwoSections())).Sections, section => Assert.False(section.AlternativeToNext));
+    }
+
+    [Fact]
     public void Undefined_language_numbers_are_rejected()
     {
         var error = Assert.Throws<ExamJsonException>(() => ExamJson.Deserialize("""{ "schemaVersion": 1, "language": 9 }"""));

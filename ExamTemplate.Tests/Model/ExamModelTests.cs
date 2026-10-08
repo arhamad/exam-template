@@ -99,4 +99,32 @@ public class ExamModelTests
         Assert.Equal(30m, exam.Sections[0].TotalMarks());
         Assert.Equal(10m, exam.Sections[1].TotalMarks());
     }
+
+    [Fact]
+    public void Total_marks_count_one_section_of_each_alternative_pair()
+    {
+        var exam = TestExams.TwoSections();
+        exam.Sections[0].AlternativeToNext = true;
+
+        Assert.Equal(30m, exam.TotalMarks());
+    }
+
+    [Fact]
+    public void Main_question_count_is_the_number_of_sections()
+    {
+        var exam = TestExams.TwoSections();
+
+        Assert.Equal(2, exam.MainQuestionCount());
+        Assert.Equal(5, exam.QuestionCount());
+    }
+
+    [Fact]
+    public void A_section_is_the_second_of_a_pair_when_the_previous_one_is_an_alternative()
+    {
+        var exam = TestExams.TwoSections();
+        exam.Sections[0].AlternativeToNext = true;
+
+        Assert.False(exam.IsSecondOfPair(0));
+        Assert.True(exam.IsSecondOfPair(1));
+    }
 }
