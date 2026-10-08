@@ -157,12 +157,87 @@ public class ExamEditingTests
     }
 
     [Fact]
-    public void NumberOf_counts_questions_continuously_across_sections()
+    public void Swapping_the_two_sections_of_a_pair_keeps_them_paired()
     {
         var exam = TestExams.TwoSections();
+        var (first, second) = (exam.Sections[0], exam.Sections[1]);
+        first.AlternativeToNext = true;
 
-        Assert.Equal(1, ExamEditing.NumberOf(exam, exam.Sections[0].Questions[0].Id));
-        Assert.Equal(4, ExamEditing.NumberOf(exam, exam.Sections[1].Questions[0].Id));
-        Assert.Equal(0, ExamEditing.NumberOf(exam, Guid.NewGuid()));
+        Assert.True(ExamEditing.MoveSection(exam, second.Id, -1));
+
+        Assert.Equal(new[] { second, first }, exam.Sections);
+        Assert.True(second.AlternativeToNext);
+        Assert.False(first.AlternativeToNext);
+    }
+
+    [Fact]
+    public void Moving_a_section_away_from_its_pair_clears_the_flag()
+    {
+        var exam = Sections("A", "B", "C");
+        exam.Sections[0].AlternativeToNext = true;
+
+        Assert.True(ExamEditing.MoveSection(exam, exam.Sections[1].Id, +1));
+
+        Assert.Equal(new[] { "A", "C", "B" }, exam.Sections.Select(section => section.Title));
+        Assert.All(exam.Sections, section => Assert.False(section.AlternativeToNext));
+    }
+
+    [Fact]
+    public void Removing_a_section_of_a_pair_clears_the_flag()
+    {
+        var exam = TestExams.TwoSections();
+        exam.Sections[0].AlternativeToNext = true;
+
+        Assert.True(ExamEditing.RemoveSection(exam, exam.Sections[1].Id));
+
+        Assert.False(exam.Sections[0].AlternativeToNext);
+    }
+
+    [Fact]
+    public void Two_separate_pairs_survive_moving_an_unrelated_section()
+    {
+        var exam = Sections("A", "B", "C", "X", "D", "E");
+        exam.Sections[0].AlternativeToNext = true;
+        exam.Sections[4].AlternativeToNext = true;
+
+        Assert.True(ExamEditing.MoveSection(exam, exam.Sections[2].Id, +1));
+
+        Assert.Equal(new[] { "A", "B", "X", "C", "D", "E" }, exam.Sections.Select(section => section.Title));
+        Assert.Equal(new[] { "A", "D" }, exam.Sections.Where(section => section.AlternativeToNext).Select(section => section.Title));
+    }
+
+    [Fact]
+    public void A_flag_without_a_partner_stays_on_its_section_when_sections_move()
+    {
+        var exam = Sections("A", "B");
+        exam.Sections[1].AlternativeToNext = true;
+
+        Assert.True(ExamEditing.MoveSection(exam, exam.Sections[1].Id, -1));
+
+        Assert.Equal(new[] { "B", "A" }, exam.Sections.Select(section => section.Title));
+        Assert.True(exam.Sections[0].AlternativeToNext);
+    }
+
+    [Fact]
+    public void Adding_an_instruction_once_skips_duplicates_and_respects_the_limit()
+    {
+        var exam = TestExams.Valid();
+
+        Assert.True(ExamEditing.AddInstructionOnce(exam, "أجب عن أحد السؤالين."));
+        Assert.False(ExamEditing.AddInstructionOnce(exam, " أجب عن أحد السؤالين. "));
+        Assert.False(ExamEditing.AddInstructionOnce(exam, "  "));
+        Assert.Equal(["اقرأ/ي السؤال كاملًا قبل الإجابة.", "أجب عن أحد السؤالين."], exam.Instructions);
+
+        exam.Instructions.AddRange(Enumerable.Range(1, ExamLimits.MaxInstructions).Select(i => $"تعليمة {i}"));
+        Assert.False(ExamEditing.AddInstructionOnce(exam, "تعليمة جديدة"));
+    }
+
+    private static ExamDefinition Sections(params string[] titles)
+    {
+        var exam = TestExams.Valid();
+        exam.Sections = titles
+            .Select(title => new ExamSection { Title = title, Questions = [TestExams.TrueFalse($"عبارة {title}", 5, true)] })
+            .ToList();
+        return exam;
     }
 }

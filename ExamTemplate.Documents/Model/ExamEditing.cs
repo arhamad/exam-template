@@ -3,8 +3,15 @@ namespace ExamTemplate.Documents.Model;
 /// <summary>Structural edits used by the question editor.</summary>
 public static class ExamEditing
 {
-    public static bool MoveSection(ExamDefinition exam, Guid sectionId, int delta) =>
-        Move(exam.Sections, exam.Sections.FindIndex(section => section.Id == sectionId), delta);
+    public static bool MoveSection(ExamDefinition exam, Guid sectionId, int delta)
+    {
+        var pairs = AlternativePairs(exam);
+        if (!Move(exam.Sections, exam.Sections.FindIndex(section => section.Id == sectionId), delta))
+            return false;
+
+        KeepPairsAdjacent(exam, pairs);
+        return true;
+    }
 
     public static bool MoveQuestion(ExamDefinition exam, Guid questionId, int delta) =>
         Find(exam, questionId) is { } found && Move(found.Section.Questions, found.Index, delta);
@@ -42,8 +49,29 @@ public static class ExamEditing
         return true;
     }
 
-    public static bool RemoveSection(ExamDefinition exam, Guid sectionId) =>
-        exam.Sections.RemoveAll(section => section.Id == sectionId) > 0;
+    public static bool RemoveSection(ExamDefinition exam, Guid sectionId)
+    {
+        var pairs = AlternativePairs(exam);
+        if (exam.Sections.RemoveAll(section => section.Id == sectionId) == 0)
+            return false;
+
+        KeepPairsAdjacent(exam, pairs);
+        return true;
+    }
+
+    /// <summary>Appends an instruction unless the same text is already listed or the list is full.</summary>
+    public static bool AddInstructionOnce(ExamDefinition exam, string text)
+    {
+        var trimmed = text.Trim();
+        if (trimmed.Length == 0 || exam.Instructions.Count >= ExamLimits.MaxInstructions
+            || exam.Instructions.Any(instruction => instruction.Trim() == trimmed))
+        {
+            return false;
+        }
+
+        exam.Instructions.Add(trimmed);
+        return true;
+    }
 
     public static void SetCorrectOption(ExamQuestion question, Guid optionId)
     {
@@ -80,18 +108,32 @@ public static class ExamEditing
         static string Swap(string value, string oldDefault, string newDefault) => value == oldDefault ? newDefault : value;
     }
 
-    /// <summary>The question's 1-based number across all sections, or 0 when it isn't in the exam.</summary>
-    public static int NumberOf(ExamDefinition exam, Guid questionId)
-    {
-        var number = 0;
-        foreach (var question in exam.Sections.SelectMany(section => section.Questions))
-        {
-            number++;
-            if (question.Id == questionId)
-                return number;
-        }
+    // An alternative pair is two neighbouring sections, flagged on the first. Moving or removing sections must not
+    // pair a section with a different neighbour by accident, so the pairs are remembered as ids before the edit and
+    // the flags re-applied after it: a pair that is still adjacent keeps its flag on whichever member now comes first,
+    // a separated pair loses it, and a flag that had no partner (an error the validator reports) stays where it was.
+    private static List<(Guid First, Guid? Second)> AlternativePairs(ExamDefinition exam) =>
+        exam.Sections
+            .Select((section, index) => (section, index))
+            .Where(pair => pair.section.AlternativeToNext)
+            .Select(pair => (pair.section.Id, index: pair.index + 1 < exam.Sections.Count ? exam.Sections[pair.index + 1].Id : (Guid?)null))
+            .ToList();
 
-        return 0;
+    private static void KeepPairsAdjacent(ExamDefinition exam, List<(Guid First, Guid? Second)> pairs)
+    {
+        foreach (var section in exam.Sections)
+            section.AlternativeToNext = false;
+
+        foreach (var (first, second) in pairs)
+        {
+            var firstIndex = exam.Sections.FindIndex(section => section.Id == first);
+            var secondIndex = second is null ? -1 : exam.Sections.FindIndex(section => section.Id == second);
+
+            if (second is null && firstIndex >= 0)
+                exam.Sections[firstIndex].AlternativeToNext = true;
+            else if (firstIndex >= 0 && secondIndex >= 0 && Math.Abs(firstIndex - secondIndex) == 1)
+                exam.Sections[Math.Min(firstIndex, secondIndex)].AlternativeToNext = true;
+        }
     }
 
     private static (ExamSection Section, int Index)? Find(ExamDefinition exam, Guid questionId)
