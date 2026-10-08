@@ -119,30 +119,33 @@ internal sealed class ExamPdfLayout(ExamPaper paper, PaperKind kind, byte[] logo
             .LineHorizontal(HairlineBorder / 8f).LineColor(Hex(RuleColor));
     }
 
-    // Answer key only: question numbers and answers, five pairs per row.
+    // Answer key only: item labels and answers, five pairs per row, one table per section since labels restart.
     private void AnswerSummary(IContainer container) => container.Column(column =>
     {
         column.Item().PaddingBottom(2).Text(_wording.AnswerSummary).FontSize(SummaryTitleSize).Bold();
-        column.Item().Table(table =>
+        foreach (var group in paper.AnswerSummary)
         {
-            table.ColumnsDefinition(columns =>
+            column.Item().PaddingTop(3).PaddingBottom(1).Text(Isolate(group.Heading)).FontSize(SummaryHeadingSize).Bold();
+            column.Item().Table(table =>
             {
-                foreach (var width in SummaryGrid)
-                    columns.RelativeColumn(width);
+                table.ColumnsDefinition(columns =>
+                {
+                    foreach (var width in SummaryGrid)
+                        columns.RelativeColumn(width);
+                });
+
+                var padding = (SummaryPairsPerRow - group.Entries.Count % SummaryPairsPerRow) % SummaryPairsPerRow;
+                var entries = group.Entries
+                    .Select(entry => (entry.Label, entry.Answer))
+                    .Concat(Enumerable.Repeat((Label: "", Answer: ""), padding));
+
+                foreach (var (label, answer) in entries)
+                {
+                    SummaryCell(table.Cell(), label, shaded: true);
+                    SummaryCell(table.Cell(), answer, shaded: false);
+                }
             });
-
-            var all = paper.AnswerSummary.SelectMany(group => group.Entries).ToList();
-            var padding = (SummaryPairsPerRow - all.Count % SummaryPairsPerRow) % SummaryPairsPerRow;
-            var entries = all
-                .Select(entry => (Number: entry.Label, entry.Answer))
-                .Concat(Enumerable.Repeat((Number: "", Answer: ""), padding));
-
-            foreach (var (number, answer) in entries)
-            {
-                SummaryCell(table.Cell(), number, shaded: true);
-                SummaryCell(table.Cell(), answer, shaded: false);
-            }
-        });
+        }
     });
 
     private static void SummaryCell(IContainer cell, string text, bool shaded)
@@ -184,6 +187,13 @@ internal sealed class ExamPdfLayout(ExamPaper paper, PaperKind kind, byte[] logo
 
             column.Item().PreventPageBreak().Column(block =>
             {
+                // The choice notice stays on the page with the section bar (or the first question) it introduces.
+                if (index == 0 && section.HasChoiceNotice)
+                {
+                    block.Item().PaddingTop(4).PaddingBottom(4).Text(Isolate(section.ChoiceNotice))
+                        .FontSize(ChoiceNoticeSize).Bold().AlignCenter();
+                }
+
                 if (withBar)
                 {
                     block.Item().Element(container => SectionBar(container, section));
