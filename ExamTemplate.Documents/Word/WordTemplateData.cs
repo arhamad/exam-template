@@ -38,7 +38,7 @@ internal static class WordTemplateData
             ["TotalMarksText"] = paper.TotalMarksText,
             ["IsAnswerKey"] = isAnswerKey,
             ["HasAnswerSummary"] = isAnswerKey && paper.AnswerSummary.Count > 0,
-            ["SummaryRows"] = SummaryRows(paper.AnswerSummary),
+            ["SummaryRows"] = SummaryRows(paper.AnswerSummary.SelectMany(group => group.Entries).ToList()),
             ["HasInstructions"] = paper.Instructions.Count > 0,
             ["Instructions"] = paper.Instructions.Select((instruction, index) => new InstructionItem(Number(index + 1), Text(instruction))).ToList(),
             ["Sections"] = paper.Sections.Select(section => Section(section, isAnswerKey)).ToList(),
@@ -68,7 +68,7 @@ internal static class WordTemplateData
         var twoColumns = question.OptionLayout == OptionLayout.TwoColumns;
 
         return new QuestionItem(
-            Number(question.Number),
+            question.Label,
             Text(question.Text),
             Text(question.Note),
             question.Note.Length > 0,
@@ -97,7 +97,7 @@ internal static class WordTemplateData
         entries.Chunk(DesignTokens.SummaryPairsPerRow)
             .Select(row =>
             {
-                string NumberAt(int index) => index < row.Length ? Number(row[index].Number) : "";
+                string NumberAt(int index) => index < row.Length ? row[index].Label : "";
                 string AnswerAt(int index) => index < row.Length ? row[index].Answer : "";
                 return new SummaryRowItem(
                     NumberAt(0), AnswerAt(0), NumberAt(1), AnswerAt(1), NumberAt(2), AnswerAt(2),

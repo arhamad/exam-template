@@ -19,7 +19,7 @@ public class WordTemplateDataTests
         Assert.Equal("الفصل الأول 1261 – 2026/2027", data["SemesterLine"]);
         Assert.Equal("ب", data["VersionLetter"]);
         Assert.Equal("النموذج ب", data["FooterVersionText"]);
-        Assert.Equal("8 أسئلة", data["QuestionCountText"]);
+        Assert.Equal("3 أسئلة", data["QuestionCountText"]);
         Assert.Equal("100 علامة", data["TotalMarksText"]);
         Assert.Equal(true, data["HasExamMode"]);
         Assert.Equal(false, data["HasExamDate"]);
@@ -36,7 +36,7 @@ public class WordTemplateDataTests
 
         Assert.Equal("B", student["VersionLetter"]);
         Assert.Equal("Version B", student["FooterVersionText"]);
-        Assert.Equal("8 questions", student["QuestionCountText"]);
+        Assert.Equal("3 questions", student["QuestionCountText"]);
         Assert.Equal("100 marks", student["TotalMarksText"]);
         Assert.Equal("End of questions", student["EndText"]);
         Assert.Equal(" – Good luck", student["EndNote"]);
@@ -80,7 +80,7 @@ public class WordTemplateDataTests
         Assert.Equal(true, data["IsAnswerKey"]);
         Assert.Equal(true, data["HasAnswerSummary"]);
         Assert.Equal("", data["EndNote"]);
-        Assert.Equal(paper.AnswerSummary.Count, Bubbles(questions).Count(bubble => bubble == DesignTokens.FilledBubble));
+        Assert.Equal(paper.AnswerSummary.Sum(group => group.Entries.Count), Bubbles(questions).Count(bubble => bubble == DesignTokens.FilledBubble));
         Assert.DoesNotContain(questions, question => question.ShowAnswerLines);
         Assert.Equal(3, questions.Count(question => question.ShowModelAnswer));
     }

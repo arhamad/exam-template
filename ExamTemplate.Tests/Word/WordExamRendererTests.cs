@@ -65,7 +65,7 @@ public class WordExamRendererTests
         Assert.Contains("ملخص الإجابات", text);
         Assert.Contains("تُبسّط الدالة أولًا", text);
         Assert.DoesNotContain("اسم الطالب:", text);
-        Assert.Equal(paper.AnswerSummary.Count, text.Split(DesignTokens.FilledBubble).Length - 1);
+        Assert.Equal(paper.AnswerSummary.Sum(group => group.Entries.Count), text.Split(DesignTokens.FilledBubble).Length - 1);
         Assert.Equal(0, AnswerLineRows(document));
     }
 
@@ -119,7 +119,7 @@ public class WordExamRendererTests
         var footer = string.Concat(document.MainDocumentPart!.FooterParts.Single().Footer!.Descendants<Text>().Select(text => text.Text));
 
         Assert.Contains("الفصل الأول 1261 – 2026/2027", body);
-        Assert.Contains("عدد الأسئلة: 8 أسئلة", body);
+        Assert.Contains("عدد الأسئلة: 3 أسئلة", body);
         Assert.Contains("1290 – تصميم منطق الحاسوب", footer);
         Assert.Contains("النموذج ب – 2026/2027", footer);
     }
@@ -152,7 +152,7 @@ public class WordExamRendererTests
 
         Assert.Contains("Name:", text);
         Assert.Contains("Exam instructions", text);
-        Assert.Contains("Questions: 8 questions", text);
+        Assert.Contains("Questions: 3 questions", text);
         Assert.Contains("End of questions – Good luck", TextsOfStyle(document, "ExamEnd"));
         Assert.DoesNotContain("Answer key", text);
         Assert.Equal(
@@ -172,7 +172,7 @@ public class WordExamRendererTests
         Assert.Contains("Answer key – Version B – for examiners only", text);
         Assert.Contains("Answer summary", text);
         Assert.Contains("Model answer:", text);
-        Assert.Equal(paper.AnswerSummary.Count, text.Split(DesignTokens.FilledBubble).Length - 1);
+        Assert.Equal(paper.AnswerSummary.Sum(group => group.Entries.Count), text.Split(DesignTokens.FilledBubble).Length - 1);
     }
 
     [Fact]

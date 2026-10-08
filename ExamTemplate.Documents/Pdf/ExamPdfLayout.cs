@@ -131,9 +131,10 @@ internal sealed class ExamPdfLayout(ExamPaper paper, PaperKind kind, byte[] logo
                     columns.RelativeColumn(width);
             });
 
-            var padding = (SummaryPairsPerRow - paper.AnswerSummary.Count % SummaryPairsPerRow) % SummaryPairsPerRow;
-            var entries = paper.AnswerSummary
-                .Select(entry => (Number: entry.Number.ToString(CultureInfo.InvariantCulture), entry.Answer))
+            var all = paper.AnswerSummary.SelectMany(group => group.Entries).ToList();
+            var padding = (SummaryPairsPerRow - all.Count % SummaryPairsPerRow) % SummaryPairsPerRow;
+            var entries = all
+                .Select(entry => (Number: entry.Label, entry.Answer))
                 .Concat(Enumerable.Repeat((Number: "", Answer: ""), padding));
 
             foreach (var (number, answer) in entries)
@@ -219,7 +220,7 @@ internal sealed class ExamPdfLayout(ExamPaper paper, PaperKind kind, byte[] logo
 
         column.Item().PaddingTop(1).Row(row =>
         {
-            row.ConstantItem(Points(questionGrid[0])).Text($"{question.Number}.").FontSize(QuestionNumberSize).Bold();
+            row.ConstantItem(Points(questionGrid[0])).Text(question.PrintedLabel).FontSize(QuestionNumberSize).Bold();
 
             row.RelativeItem().Column(text =>
             {
