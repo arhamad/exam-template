@@ -67,7 +67,8 @@
         <div class="form-check form-switch mb-0">
             @* A checked switch is never locked, so a flag left on the last section can still be turned off. *@
             <input id="@($"{SectionId}-alternative")" class="form-check-input" type="checkbox" role="switch" disabled="@switchLocked"
-                   @bind="Section.AlternativeToNext" @bind:after="() => Edited(nameof(ExamSection.AlternativeToNext))"/>
+                   aria-describedby="@($"{SectionId}-alternative-issues")"
+                   @bind="Section.AlternativeToNext" @bind:after="PairEditedAsync"/>
             <label class="form-check-label" for="@($"{SectionId}-alternative")">
                 @Ui.Text("يجيب الطالب عن هذا القسم أو القسم التالي (أحدهما فقط)", "The student answers this section or the next one (only one of the two)")
             </label>
@@ -98,8 +99,7 @@
             </div>
         }
         @* Pair issues come from the exam's structure, not from typing, so they show without waiting for a touch. *@
-        <FieldIssues Issues="Draft.Validation.ForSection(Section.Id).Where(issue => issue.Field == nameof(ExamSection.AlternativeToNext))"
-                     Id="@($"{SectionId}-alternative-issues")"/>
+        <PairIssues Section="Section" Id="@($"{SectionId}-alternative-issues")"/>
     </div>
 
     <FieldIssues Issues="IssuesFor(nameof(ExamSection.Questions))" Id="@($"{SectionId}-questions-issues")"/>
@@ -165,6 +165,13 @@
     {
         touched.Add(field);
         Draft.NotifyChanged();
+    }
+
+    // Pairing changes the next section (its badge) and the page (the "or" divider), like a structural edit.
+    private Task PairEditedAsync()
+    {
+        Edited(nameof(ExamSection.AlternativeToNext));
+        return OnStructureChanged.InvokeAsync(null);
     }
 
     private void AddNoticeToInstructions()
