@@ -10,6 +10,8 @@
     var lang = ExamContent.Lang(Exam.Language);
     var number = Index + 1;
     var labels = ItemLabels.For(Section, Exam.Language);
+    var wording = PaperWording.For(Exam.Language);
+    var switchLocked = isLast && !Section.AlternativeToNext;
 }
 
 <section id="@SectionId" class="exam-section focus-target" tabindex="-1" aria-labelledby="@($"{SectionId}-heading")">
@@ -17,6 +19,10 @@
         <div class="section-heading">
             <h2 id="@($"{SectionId}-heading")" class="section-title">@Ui.Text("القسم", "Section") @number</h2>
             <SectionSummary Section="Section"/>
+            @if (Exam.IsSecondOfPair(Index))
+            {
+                <span class="pair-badge">@Ui.Text("بديل للقسم السابق", "Alternative to the previous section")</span>
+            }
         </div>
         <div class="section-actions" role="group" aria-label="@Ui.Text($"إجراءات القسم {number}", $"Section {number} actions")">
             <button id="@($"{SectionId}-up")" type="button" class="btn btn-sm btn-outline-secondary icon-button"
@@ -55,6 +61,45 @@
                       @bind="Section.Instruction" @bind:after="() => Edited(nameof(ExamSection.Instruction))"></textarea>
             <FieldIssues Issues="IssuesFor(nameof(ExamSection.Instruction))" Id="@($"{SectionId}-instruction-issues")"/>
         </div>
+    </div>
+
+    <div class="section-pair">
+        <div class="form-check form-switch mb-0">
+            @* A checked switch is never locked, so a flag left on the last section can still be turned off. *@
+            <input id="@($"{SectionId}-alternative")" class="form-check-input" type="checkbox" role="switch" disabled="@switchLocked"
+                   @bind="Section.AlternativeToNext" @bind:after="() => Edited(nameof(ExamSection.AlternativeToNext))"/>
+            <label class="form-check-label" for="@($"{SectionId}-alternative")">
+                @Ui.Text("يجيب الطالب عن هذا القسم أو القسم التالي (أحدهما فقط)", "The student answers this section or the next one (only one of the two)")
+            </label>
+            @if (switchLocked)
+            {
+                <span class="form-hint">@Ui.Text("غير متاح للقسم الأخير.", "Not available for the last section.")</span>
+            }
+        </div>
+        @if (Section.AlternativeToNext)
+        {
+            var notice = wording.ChoiceNotice(Index);
+            var listed = Exam.Instructions.Any(instruction => instruction.Trim() == notice);
+            var full = Exam.Instructions.Count >= ExamLimits.MaxInstructions;
+            <div class="choice-notice-preview">
+                <span class="form-hint">@Ui.Text("يُطبع قبل هذا القسم:", "Printed before this section:")</span>
+                <bdi dir="@dir" lang="@lang">@notice</bdi>
+                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(listed || full)" @onclick="AddNoticeToInstructions">
+                    <Icon Name="plus"/> @Ui.Text("أضفها إلى تعليمات الامتحان", "Add it to the exam instructions")
+                </button>
+                @if (listed)
+                {
+                    <span class="form-hint">@Ui.Text("موجودة في تعليمات الامتحان.", "Already in the exam instructions.")</span>
+                }
+                else if (full)
+                {
+                    <span class="form-hint">@Ui.Text($"بلغت التعليمات حدها ({ExamLimits.MaxInstructions}).", $"The instructions are at their limit ({ExamLimits.MaxInstructions}).")</span>
+                }
+            </div>
+        }
+        @* Pair issues come from the exam's structure, not from typing, so they show without waiting for a touch. *@
+        <FieldIssues Issues="Draft.Validation.ForSection(Section.Id).Where(issue => issue.Field == nameof(ExamSection.AlternativeToNext))"
+                     Id="@($"{SectionId}-alternative-issues")"/>
     </div>
 
     <FieldIssues Issues="IssuesFor(nameof(ExamSection.Questions))" Id="@($"{SectionId}-questions-issues")"/>
@@ -120,6 +165,12 @@
     {
         touched.Add(field);
         Draft.NotifyChanged();
+    }
+
+    private void AddNoticeToInstructions()
+    {
+        if (ExamEditing.AddInstructionOnce(Exam, PaperWording.For(Exam.Language).ChoiceNotice(Index)))
+            Draft.NotifyChanged();
     }
 
     private Task AddQuestionAsync(QuestionType type)

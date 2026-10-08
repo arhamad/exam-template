@@ -29,6 +29,10 @@ else
     for (var index = 0; index < exam.Sections.Count; index++)
     {
         var section = exam.Sections[index];
+        if (exam.IsSecondOfPair(index))
+        {
+            <div class="pair-divider" role="separator" aria-label="@Ui.Text("أو", "or")"><span>@Ui.Text("أو", "OR")</span></div>
+        }
         <SectionEditor @key="section.Id" Exam="exam" Section="section" Index="index" OnStructureChanged="StructureChanged"/>
     }
 
