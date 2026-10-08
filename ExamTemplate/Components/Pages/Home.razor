@@ -111,6 +111,15 @@ else
                     @Ui.Text("الامتحان نفسه باللغة الإنجليزية، ويُطبع من اليسار إلى اليمين.", "The same exam in English, printed left to right.")
                 </span>
             </button>
+
+            <button type="button" class="start-option" disabled="@busy" @onclick="() => LoadSampleAsync(DemoExams.OptionalPair)">
+                <Icon Name="sample" Class="start-icon"/>
+                <span class="start-title">@Ui.Text("نموذج بسؤالين اختياريين", "Sample exam with an optional pair")</span>
+                <span class="start-text">
+                    @Ui.Text("ستة أسئلة رئيسية: موضوعية مرقّمة، مقالية بفروع أ، ب، ج، والطالب يجيب عن الخامس أو السادس.",
+                        "Six main questions: numbered objective sections, essays with parts a, b, c, and a choice between the fifth and the sixth.")
+                </span>
+            </button>
         </div>
     </section>
 
