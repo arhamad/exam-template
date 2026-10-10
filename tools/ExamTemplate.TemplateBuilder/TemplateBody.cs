@@ -27,6 +27,7 @@ internal sealed class TemplateBody(ExamLanguage language) : TemplatePart(languag
         AnswerSummary(),
         Instructions(),
         Control("{{#foreach s in Sections}}"),
+        ChoiceNotice(),
         SectionBar(),
         Control("{{#foreach q in s.Questions}}"),
         QuestionRow(),
@@ -92,7 +93,8 @@ internal sealed class TemplateBody(ExamLanguage language) : TemplatePart(languag
                 Cell(grid[5], blank, P("ExamStudentBlank"))));
     }
 
-    // Answer key only: question numbers and answers, five pairs per row.
+    // Answer key only: item labels and answers, five pairs per row, in one table per section since labels restart
+    // in every section. The heading paragraph keeps consecutive tables apart.
     private string AnswerSummary()
     {
         var grid = SummaryGrid;
@@ -106,13 +108,22 @@ internal sealed class TemplateBody(ExamLanguage language) : TemplatePart(languag
         return string.Concat(
             Control("{{#if HasAnswerSummary}}"),
             P("ExamSummaryTitle", R(Wording.AnswerSummary)),
+            Control("{{#foreach g in SummaryGroups}}"),
+            P("ExamSummaryHeading", R("{{g.Heading}}")),
             Table(grid, new TableOptions(TableBorders.Grid(Line.Hairline), MarginTopTwips: 20, MarginBottomTwips: 20),
-                ControlRow(grid, "{{#foreach r in SummaryRows}}"),
+                ControlRow(grid, "{{#foreach r in g.Rows}}"),
                 Row(RowOptions.KeepTogether, cells.ToArray()),
                 ControlRow(grid, "{{/foreach}}")),
+            Control("{{/foreach}}"),
             P("ExamSpacer"),
             Control("{{/if}}"));
     }
+
+    // «أجب عن أحد السؤالين…» before the first section of an alternative pair; keepNext ties it to the section bar.
+    private string ChoiceNotice() => string.Concat(
+        Control("{{#if s.HasChoiceNotice}}"),
+        P("ExamChoiceNotice", R("{{s.ChoiceNotice}}")),
+        Control("{{/if}}"));
 
     // Numbers sit in their own column so wrapped instruction lines stay aligned.
     private string Instructions()
@@ -164,7 +175,7 @@ internal sealed class TemplateBody(ExamLanguage language) : TemplatePart(languag
             Control("{{#if q.IsTrueFalse}}"),
             Table(trueFalse, options,
                 Row(RowOptions.KeepTogether,
-                    Cell(trueFalse[0], CellOptions.Plain, P("ExamQuestionNumber", R("{{q.Number}}."))),
+                    Cell(trueFalse[0], CellOptions.Plain, P("ExamQuestionNumber", R("{{q.Label}}"))),
                     Cell(trueFalse[1], CellOptions.Plain, QuestionText()),
                     Cell(trueFalse[2], CellOptions.Plain, P("ExamTrueFalse", R("{{q.TrueBubble}}", "ExamBubbleChar"), R(" " + Wording.TrueFalse(true)))),
                     Cell(trueFalse[3], CellOptions.Plain, P("ExamTrueFalse", R("{{q.FalseBubble}}", "ExamBubbleChar"), R(" " + Wording.TrueFalse(false)))),
@@ -172,7 +183,7 @@ internal sealed class TemplateBody(ExamLanguage language) : TemplatePart(languag
             Control("{{#else}}"),
             Table(grid, options,
                 Row(RowOptions.KeepTogether,
-                    Cell(grid[0], CellOptions.Plain, P("ExamQuestionNumber", R("{{q.Number}}."))),
+                    Cell(grid[0], CellOptions.Plain, P("ExamQuestionNumber", R("{{q.Label}}"))),
                     Cell(grid[1], CellOptions.Plain, QuestionText()),
                     Cell(grid[2], CellOptions.Plain, P("ExamMarks", R("({{q.MarksText}})"))))),
             P("ExamSpacerChain"),

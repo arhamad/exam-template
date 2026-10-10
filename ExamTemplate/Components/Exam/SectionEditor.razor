@@ -9,6 +9,9 @@
     var dir = ExamContent.Dir(Exam.Language);
     var lang = ExamContent.Lang(Exam.Language);
     var number = Index + 1;
+    var labels = ItemLabels.For(Section, Exam.Language);
+    var wording = PaperWording.For(Exam.Language);
+    var switchLocked = isLast && !Section.AlternativeToNext;
 }
 
 <section id="@SectionId" class="exam-section focus-target" tabindex="-1" aria-labelledby="@($"{SectionId}-heading")">
@@ -16,6 +19,10 @@
         <div class="section-heading">
             <h2 id="@($"{SectionId}-heading")" class="section-title">@Ui.Text("القسم", "Section") @number</h2>
             <SectionSummary Section="Section"/>
+            @if (Exam.IsSecondOfPair(Index))
+            {
+                <span class="pair-badge">@Ui.Text("بديل للقسم السابق", "Alternative to the previous section")</span>
+            }
         </div>
         <div class="section-actions" role="group" aria-label="@Ui.Text($"إجراءات القسم {number}", $"Section {number} actions")">
             <button id="@($"{SectionId}-up")" type="button" class="btn btn-sm btn-outline-secondary icon-button"
@@ -56,6 +63,45 @@
         </div>
     </div>
 
+    <div class="section-pair">
+        <div class="form-check form-switch mb-0">
+            @* A checked switch is never locked, so a flag left on the last section can still be turned off. *@
+            <input id="@($"{SectionId}-alternative")" class="form-check-input" type="checkbox" role="switch" disabled="@switchLocked"
+                   aria-describedby="@($"{SectionId}-alternative-issues")"
+                   @bind="Section.AlternativeToNext" @bind:after="PairEditedAsync"/>
+            <label class="form-check-label" for="@($"{SectionId}-alternative")">
+                @Ui.Text("يجيب الطالب عن هذا القسم أو القسم التالي (أحدهما فقط)", "The student answers this section or the next one (only one of the two)")
+            </label>
+            @if (switchLocked)
+            {
+                <span class="form-hint">@Ui.Text("غير متاح للقسم الأخير.", "Not available for the last section.")</span>
+            }
+        </div>
+        @if (Section.AlternativeToNext)
+        {
+            var notice = wording.ChoiceNotice(Index);
+            var listed = Exam.Instructions.Any(instruction => instruction.Trim() == notice);
+            var full = Exam.Instructions.Count >= ExamLimits.MaxInstructions;
+            <div class="choice-notice-preview">
+                <span class="form-hint">@Ui.Text("يُطبع قبل هذا القسم:", "Printed before this section:")</span>
+                <bdi dir="@dir" lang="@lang">@notice</bdi>
+                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(listed || full)" @onclick="AddNoticeToInstructions">
+                    <Icon Name="plus"/> @Ui.Text("أضفها إلى تعليمات الامتحان", "Add it to the exam instructions")
+                </button>
+                @if (listed)
+                {
+                    <span class="form-hint">@Ui.Text("موجودة في تعليمات الامتحان.", "Already in the exam instructions.")</span>
+                }
+                else if (full)
+                {
+                    <span class="form-hint">@Ui.Text($"بلغت التعليمات حدها ({ExamLimits.MaxInstructions}).", $"The instructions are at their limit ({ExamLimits.MaxInstructions}).")</span>
+                }
+            </div>
+        }
+        @* Pair issues come from the exam's structure, not from typing, so they show without waiting for a touch. *@
+        <PairIssues Section="Section" Id="@($"{SectionId}-alternative-issues")"/>
+    </div>
+
     <FieldIssues Issues="IssuesFor(nameof(ExamSection.Questions))" Id="@($"{SectionId}-questions-issues")"/>
 
     @if (Section.Questions.Count == 0)
@@ -70,7 +116,7 @@
         {
             var question = Section.Questions[index];
             <QuestionCard @key="question.Id" Exam="Exam" Section="Section" Question="question"
-                          Number="FirstNumber + index" IndexInSection="index" OnStructureChanged="OnStructureChanged"/>
+                          Label="@labels.Label(index)" IndexInSection="index" OnStructureChanged="OnStructureChanged"/>
         }
     </div>
 
@@ -104,9 +150,6 @@
     /// <summary>Zero-based position of the section.</summary>
     [Parameter] public int Index { get; set; }
 
-    /// <summary>Number of the section's first question (numbering continues across sections).</summary>
-    [Parameter] public int FirstNumber { get; set; } = 1;
-
     /// <summary>Raised after a structural edit with the id of the element to focus once the page re-renders.</summary>
     [Parameter] public EventCallback<string?> OnStructureChanged { get; set; }
 
@@ -122,6 +165,19 @@
     {
         touched.Add(field);
         Draft.NotifyChanged();
+    }
+
+    // Pairing changes the next section (its badge) and the page (the "or" divider), like a structural edit.
+    private Task PairEditedAsync()
+    {
+        Edited(nameof(ExamSection.AlternativeToNext));
+        return OnStructureChanged.InvokeAsync(null);
+    }
+
+    private void AddNoticeToInstructions()
+    {
+        if (ExamEditing.AddInstructionOnce(Exam, PaperWording.For(Exam.Language).ChoiceNotice(Index)))
+            Draft.NotifyChanged();
     }
 
     private Task AddQuestionAsync(QuestionType type)

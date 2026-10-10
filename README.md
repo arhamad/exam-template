@@ -23,7 +23,12 @@ The app has three steps: **معلومات الامتحان** (language, header a
 - The draft is saved automatically in this browser's `localStorage` and nowhere else. To keep a copy or continue on
   another computer, use «تصدير ملف الامتحان (JSON)», then «استيراد ملف امتحان (JSON)» on the home page (up to 5 MB).
 - «تحميل نموذج تجريبي» and «نموذج تجريبي بالإنجليزية» load the demo exam in Arabic or English
-  (`DemoExams.ComputerLogicDesign`, `DemoExams.ComputerLogicDesignEnglish`).
+  (`DemoExams.ComputerLogicDesign`, `DemoExams.ComputerLogicDesignEnglish`). «نموذج بسؤالين اختياريين» loads
+  `DemoExams.OptionalPair`: six main questions, the last two alternatives.
+- Each section is one main question on the paper. A switch under the section's fields, «يجيب الطالب عن هذا القسم أو
+  القسم التالي», pairs it with the next section: the student answers one of the two, only one counts toward the total,
+  and the paper prints «أجب عن أحد السؤالين الآتيين فقط: السؤال الخامس أو السؤال السادس.» before the first of them.
+  The editor previews that sentence and can add it to the exam instructions with one click.
 - Errors block generation and link to the field or question to fix. Warnings, such as an essay without a model
   answer, don't.
 
@@ -32,7 +37,7 @@ The app has three steps: **معلومات الامتحان** (language, header a
 | Path | Contents |
 |---|---|
 | `ExamTemplate/` | Blazor Web App: Interactive Server, prerender off, Bootstrap's right-to-left or left-to-right build. Pages in `Components/Pages`, editors in `Components/Exam`, draft autosave, browser interop and the interface language in `Services/` |
-| `ExamTemplate.Documents/` | Everything that doesn't need the UI: `Model` (exam, defaults, JSON and user messages), `Validation`, `Versioning`, `Papers` (the printable model and its wording), `Design` (shared layout tokens), `Word`, `Pdf`, `Services` (`IExamDocumentService`, `AddExamDocuments()`), `Demo` |
+| `ExamTemplate.Documents/` | Everything that doesn't need the UI: `Model` (exam, defaults, JSON and user messages), `Validation`, `Versioning`, `Papers` (the printable model, item labels and wording), `Design` (shared layout tokens), `Word`, `Pdf`, `Services` (`IExamDocumentService`, `AddExamDocuments()`), `Demo` |
 | `ExamTemplate.Tests/` | xUnit tests for the library, the template structure, both renderers and the web app's interface language |
 | `tools/ExamTemplate.TemplateBuilder/` | Generates the Word templates in `ExamTemplate.Documents/Word/` |
 | `tools/ExamTemplate.Samples/` | Renders the demo exams to files for visual checks |
@@ -42,10 +47,21 @@ The app has three steps: **معلومات الامتحان** (language, header a
 
 1. **Validate.** `ExamValidator` reports errors and warnings together with the section, question or option they
    belong to.
-2. **Build papers.** `ExamPaperBuilder` creates one `ExamPaper` per version: numbering, marks text, option labels and the
+2. **Build papers.** `ExamPaperBuilder` creates one `ExamPaper` per version: labels, marks text, option labels and the
    answer summary, all worded by `PaperWording` in the exam's language («علامتان» or "2 marks", أ ب ج د or A B C D).
+   - Every section is one main question, so «عدد الأسئلة» in the header is the number of sections, and labels restart
+     in every section. `ItemLabels` decides how a section's items are labelled, and the validator and the editor use
+     the same rule: objective and mixed sections count `1.` `2.` `3.`; a section made only of essays letters its parts
+     «أ.» «ب.» «ج.» (abjad order) or `a.` `b.` `c.`; a section with a single essay prints it without a label.
+   - A section marked `alternativeToNext` and the section after it are alternatives: the student answers one of them.
+     The paper prints «أجب عن أحد السؤالين الآتيين فقط: السؤال الخامس أو السؤال السادس.» (or "Answer only ONE of the
+     following two questions: Question 5 or Question 6.") centred before the first one, naming both by position, and
+     «العلامة الكلية» counts only one of the pair. An exam may hold several pairs, but a section can't be in two, the
+     last section can't start one, and both members must be worth the same marks.
+   - The key's answer summary is grouped by section, under the section title or its generated name («السؤال الأول»).
    - The first version keeps the authored order. The other versions shuffle questions *within* their section, and shuffle
-     multiple-choice options unless «الحفاظ على ترتيب الخيارات عند الخلط» is on.
+     multiple-choice options unless «الحفاظ على ترتيب الخيارات عند الخلط» is on. Labels and letters are assigned after
+     shuffling, so every version reads 1, 2, 3 or أ، ب، ج from the top.
    - Shuffling uses SplitMix64, seeded from `shuffleSeed`, the version and the section or question id. The same exam
      file always produces the same versions, and editing one question doesn't reshuffle the other sections.
      «إعادة خلط» picks a new seed.
@@ -117,7 +133,7 @@ An abridged exam file (schema version 1):
   },
   "instructions": ["…"],
   "sections": [{
-    "id": "…", "title": "القسم الأول: أسئلة موضوعية", "instruction": "…",
+    "id": "…", "title": "القسم الأول: أسئلة موضوعية", "instruction": "…", "alternativeToNext": false,
     "questions": [{
       "id": "…", "type": "multipleChoice", "text": "أي من العناصر الآتية يُعد دائرة منطقية توافقية؟", "marks": 10,
       "note": "اختر/ي إجابة واحدة فقط.", "keepOptionOrder": false,
@@ -132,6 +148,8 @@ An abridged exam file (schema version 1):
 - `language` is `arabic` or `english`. Files without it, including those written before languages existed, open as Arabic.
 - `type` is `multipleChoice`, `trueFalse` (answer in `trueFalseAnswer`) or `essay` (`answerLines` 0–20 and
   `modelAnswer`).
+- `alternativeToNext` on a section pairs it with the next one as alternatives. Files without it read it as `false`, and
+  older versions of the app ignore it (and then count both sections' marks).
 - `ExamLimits` holds the limits, such as text lengths, 2–8 options, 200 questions and 1–4 versions. The validator and
   the UI share them.
 - Files written by a newer version of the app are rejected with a message instead of being half-read.
@@ -165,8 +183,8 @@ These rules make both languages line up correctly in Word:
   Grids list columns from the start side, so the same grid mirrors between the two templates. A spacer paragraph follows
   each table so neighbouring tables never merge.
 - **Keeping questions together.** A question's rows are chained with `keepNext` and don't split across pages
-  (`cantSplit`), and a section bar stays with its first question. Each question ends with a spacer that breaks the
-  chain, so long exams still flow.
+  (`cantSplit`), a section bar stays with its first question, and the choice notice before a pair stays with its
+  section bar. Each question ends with a spacer that breaks the chain, so long exams still flow.
 - **Mixed-direction text.** Word lays out neutral characters in the direction of their run, so `2026/2027` in a `w:rtl` run
   would print as `2027/2026`, and an Arabic phrase in a left-to-right run would lose its word order. `WordPostProcessor`
   writes each `BidiText` island as a run of its own: without `w:rtl` in Arabic papers, with `w:rtl` in English ones. The
@@ -184,7 +202,7 @@ the tests.
 Tests prove the output is valid, not that it looks right. After a design change, render the samples and look at them:
 
 ```bash
-dotnet run --project tools/ExamTemplate.Samples -- artifacts/samples   # logic, logic-en and edge: every version, copy and key
+dotnet run --project tools/ExamTemplate.Samples -- artifacts/samples   # logic, logic-en, edge and choice: every version, copy and key
 swift tools/visual/pdf-to-png.swift artifacts/samples/logic-en-1290-A-exam.pdf artifacts/png 144
 osascript tools/visual/word-to-pdf.applescript "$PWD/in.docx" "$PWD/out.pdf"   # Word's own rendering (macOS)
 ```
@@ -195,8 +213,10 @@ Look for:
 - Mixed Arabic and Latin text in reading order.
 - Labels and marks on one line in their columns.
 - No question split across pages, and no section bar left alone at the bottom of a page.
+- Labels start again in every section, essay sections read أ، ب، ج, and the `choice` sample prints the notice once,
+  centred, right before its fifth section.
 - Answer bubbles and ruled answer lines.
-- The answer-key banner and answer summary.
+- The answer-key banner and the answer summary, with a heading per section.
 - «صفحة X من Y» or "Page X of Y" in the footer.
 
 Word for Mac is sandboxed: it asks before opening files outside `~/Library/Containers/com.microsoft.Word/Data`, and

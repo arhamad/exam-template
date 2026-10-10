@@ -1,4 +1,5 @@
 using ExamTemplate.Documents.Model;
+using ExamTemplate.Documents.Papers;
 
 namespace ExamTemplate.Documents.Demo;
 
@@ -134,6 +135,118 @@ public static class DemoExams
             ],
         };
     }
+
+    /// <summary>
+    /// Six main questions in the common final-exam shape: objective sections numbered 1–10, essay sections lettered
+    /// أ، ب، ج…, a single-essay problem with no label, and a last pair where the student answers one of two questions.
+    /// Six questions, 33 items, 100 marks (120 before the pair is counted once).
+    /// </summary>
+    public static ExamDefinition OptionalPair() => new()
+    {
+        Header = new ExamHeader
+        {
+            CourseName = "تصميم منطق الحاسوب",
+            CourseCode = "1290",
+            Semester = "الفصل الأول 1261",
+            AcademicYear = "2026/2027",
+            Duration = "ساعتان",
+        },
+        Instructions = [.. ExamDefaults.Arabic.Instructions, PaperWording.Arabic.ChoiceNotice(4)],
+        VersionCount = 2,
+        ShuffleSeed = 2027,
+        Sections =
+        [
+            new ExamSection
+            {
+                Id = Id(1),
+                Title = "السؤال الأول: اختيار من متعدد",
+                Instruction = "اختر/ي الإجابة الصحيحة لكل بند.",
+                Questions =
+                [
+                    Choice(1, 1, 2, "أي البوابات الآتية يكون خرجها 1 فقط عندما تكون جميع مداخلها 1؟", correct: 1, ["OR", "AND", "NOT", "XOR"]),
+                    Choice(1, 2, 2, "النظام العددي ذو الأساس 16 يُسمّى النظام:", correct: 3, ["الثنائي", "الثماني", "العشري", "السادس عشري"]),
+                    Choice(1, 3, 2, "العدد الثنائي 1010 يساوي بالنظام العشري:", correct: 2, ["5", "8", "10", "12"]),
+                    Choice(1, 4, 2, "البوابة التي يكون خرجها عكس خرج بوابة AND هي:", correct: 0, ["NAND", "NOR", "XOR", "OR"]),
+                    Choice(1, 5, 2, "عدد المتغيرات في خريطة كارنوف ذات 16 خلية هو:", correct: 2, ["2", "3", "4", "5"]),
+                    Choice(1, 6, 2, "المُرمِّز (Encoder) ذو 8 مداخل يحتاج من خطوط الخرج:", correct: 1, ["2", "3", "4", "8"]),
+                    Choice(1, 7, 2, "أي مما يأتي دائرة تتابعية؟", correct: 3, ["الجامع الكامل", "المُرمِّز", "مُفكِّك الشفرة", "القلاب D"]),
+                    Choice(1, 8, 2, "المُجمِّع (Multiplexer) ذو 4 مداخل يحتاج من خطوط الاختيار:", correct: 0, ["2", "1", "3", "4"]),
+                    Choice(1, 9, 2, "المتمم الثنائي (2's complement) للعدد 0110 هو:", correct: 3, ["1001", "0110", "1111", "1010"]),
+                    Choice(1, 10, 2, "بحسب قانون دي مورغان، (A·B)' يساوي:", correct: 2, ["A'·B'", "A+B", "A'+B'", "(A+B)'"]),
+                ],
+            },
+            new ExamSection
+            {
+                Id = Id(2),
+                Title = "السؤال الثاني: صح أم خطأ",
+                Instruction = "ضع/ي علامة أمام الإجابة الصحيحة لكل عبارة.",
+                Questions =
+                [
+                    TrueFalse(2, 1, 2, "تعطي بوابة XOR الخرج 1 عندما يختلف مدخلاها.", answer: true),
+                    TrueFalse(2, 2, 2, "الرقم 2 رقم صالح في النظام الثنائي.", answer: false),
+                    TrueFalse(2, 3, 2, "يمكن بناء أي دائرة منطقية باستخدام بوابات NAND فقط.", answer: true),
+                    TrueFalse(2, 4, 2, "القلاب JK ليس له حالة ممنوعة.", answer: true),
+                    TrueFalse(2, 5, 2, "مُفكِّك الشفرة 3 إلى 8 له ثمانية مداخل.", answer: false),
+                    TrueFalse(2, 6, 2, "في العداد المتزامن تصل نبضة الساعة إلى جميع القلابات في اللحظة نفسها.", answer: true),
+                    TrueFalse(2, 7, 2, "تفقد ذاكرة ROM محتواها عند انقطاع التيار الكهربائي.", answer: false),
+                    TrueFalse(2, 8, 2, "تُستخدم خريطة كارنوف لتبسيط الدوال المنطقية.", answer: true),
+                    TrueFalse(2, 9, 2, "يستقبل الجامع النصفي حملًا داخلًا (Carry in).", answer: false),
+                    TrueFalse(2, 10, 2, "المسجل مجموعة من القلابات تخزّن عدة بتات معًا.", answer: true),
+                ],
+            },
+            new ExamSection
+            {
+                Id = Id(3),
+                Title = "السؤال الثالث: أسئلة قصيرة",
+                Instruction = "أجب/ي باختصار عن الفروع الآتية.",
+                Questions =
+                [
+                    Essay(3, 1, 4, "عرّف/ي الدائرة التوافقية.", lines: 3, "دائرة يعتمد خرجها على قيم مداخلها الحالية فقط، دون ذاكرة لحالة سابقة."),
+                    Essay(3, 2, 4, "حوّل/ي العدد العشري 25 إلى النظام الثنائي مبيّنًا الخطوات.", lines: 3, "25 = 16 + 8 + 1، أي 11001."),
+                    Essay(3, 3, 4, "اكتب/ي جدول الحقيقة لبوابة NOR.", lines: 4, "00 → 1، 01 → 0، 10 → 0، 11 → 0."),
+                    Essay(3, 4, 4, "ما الفرق بين المزلاج (Latch) والقلاب (Flip-flop)؟", lines: 3, "المزلاج حساس لمستوى إشارة التمكين، أما القلاب فحساس لحافة نبضة الساعة."),
+                    Essay(3, 5, 4, "اذكر/ي استخدامين عمليين للمسجلات.", lines: 3, "التخزين المؤقت للبيانات داخل المعالج، والتحويل بين الإرسال المتوازي والمتوالي."),
+                ],
+            },
+            new ExamSection
+            {
+                Id = Id(4),
+                Title = "السؤال الرابع: مسألة",
+                Instruction = "بيّن/ي خطوات الحل كاملة.",
+                Questions =
+                [
+                    Essay(4, 1, 20, "بسّط/ي الدالة F(A, B, C) = Σm(1, 3, 5, 7) باستخدام خريطة كارنوف، ثم ارسم/ي الدائرة المبسّطة.", lines: 10,
+                        "تقع الحدود الأربعة في العمود C = 1 كله، فالدالة تُبسَّط إلى F = C، والدائرة سلك مباشر من المدخل C إلى الخرج."),
+                ],
+            },
+            new ExamSection
+            {
+                Id = Id(5),
+                Title = "السؤال الخامس: تصميم دائرة توافقية",
+                Instruction = "صمّم/ي جامعًا نصفيًا (Half Adder).",
+                AlternativeToNext = true,
+                Questions =
+                [
+                    Essay(5, 1, 7, "اكتب/ي جدول الحقيقة للجامع النصفي.", lines: 5, "A B | S C: 00|00، 01|10، 10|10، 11|01."),
+                    Essay(5, 2, 7, "اشتق/ي معادلتي الناتج (Sum) والحمل (Carry).", lines: 4, "S = A ⊕ B، C = A · B."),
+                    Essay(5, 3, 6, "ارسم/ي الدائرة باستخدام بوابتي XOR وAND.", lines: 6, "بوابة XOR تعطي S، وبوابة AND تعطي C، ومدخلا كل منهما A وB."),
+                ],
+            },
+            new ExamSection
+            {
+                Id = Id(6),
+                Title = "السؤال السادس: تصميم دائرة تتابعية",
+                Instruction = "صمّم/ي عدادًا ثنائيًا متزامنًا يعدّ من 0 إلى 3 باستخدام قلابات D.",
+                Questions =
+                [
+                    Essay(6, 1, 5, "ارسم/ي مخطط الحالات للعداد.", lines: 5, "أربع حالات 00 → 01 → 10 → 11 ثم العودة إلى 00 مع كل نبضة ساعة."),
+                    Essay(6, 2, 5, "اكتب/ي جدول الانتقالات (الحالة الحالية والحالة التالية).", lines: 5, "Q1Q0: 00→01، 01→10، 10→11، 11→00."),
+                    Essay(6, 3, 5, "اشتق/ي معادلتي مدخلي القلابين D1 وD0.", lines: 4, "D0 = Q0'، D1 = Q1 ⊕ Q0."),
+                    Essay(6, 4, 5, "ارسم/ي الدائرة النهائية.", lines: 6, "قلابان D يشتركان في نبضة الساعة، مع بوابة NOT لـ D0 وبوابة XOR لـ D1."),
+                ],
+            },
+        ],
+    };
 
     /// <summary>Rendering stress cases: very long text, eight long options, 20 answer lines, mixed scripts and markdown-like characters.</summary>
     public static ExamDefinition EdgeCases() => new()

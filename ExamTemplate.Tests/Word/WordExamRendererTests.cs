@@ -21,6 +21,8 @@ public class WordExamRendererTests
         { nameof(DemoExams.EdgeCases), 1, PaperKind.AnswerKey },
         { nameof(DemoExams.ComputerLogicDesignEnglish), 0, PaperKind.Student },
         { nameof(DemoExams.ComputerLogicDesignEnglish), 1, PaperKind.AnswerKey },
+        { nameof(DemoExams.OptionalPair), 0, PaperKind.Student },
+        { nameof(DemoExams.OptionalPair), 1, PaperKind.AnswerKey },
     };
 
     [Theory]
@@ -65,7 +67,7 @@ public class WordExamRendererTests
         Assert.Contains("ملخص الإجابات", text);
         Assert.Contains("تُبسّط الدالة أولًا", text);
         Assert.DoesNotContain("اسم الطالب:", text);
-        Assert.Equal(paper.AnswerSummary.Count, text.Split(DesignTokens.FilledBubble).Length - 1);
+        Assert.Equal(paper.AnswerSummary.Sum(group => group.Entries.Count), text.Split(DesignTokens.FilledBubble).Length - 1);
         Assert.Equal(0, AnswerLineRows(document));
     }
 
@@ -119,7 +121,7 @@ public class WordExamRendererTests
         var footer = string.Concat(document.MainDocumentPart!.FooterParts.Single().Footer!.Descendants<Text>().Select(text => text.Text));
 
         Assert.Contains("الفصل الأول 1261 – 2026/2027", body);
-        Assert.Contains("عدد الأسئلة: 8 أسئلة", body);
+        Assert.Contains("عدد الأسئلة: 3 أسئلة", body);
         Assert.Contains("1290 – تصميم منطق الحاسوب", footer);
         Assert.Contains("النموذج ب – 2026/2027", footer);
     }
@@ -152,13 +154,47 @@ public class WordExamRendererTests
 
         Assert.Contains("Name:", text);
         Assert.Contains("Exam instructions", text);
-        Assert.Contains("Questions: 8 questions", text);
+        Assert.Contains("Questions: 3 questions", text);
         Assert.Contains("End of questions – Good luck", TextsOfStyle(document, "ExamEnd"));
         Assert.DoesNotContain("Answer key", text);
         Assert.Equal(
             paper.Sections.SelectMany(section => section.Questions).SelectMany(question => question.Options).Select(option => option.Label + ")"),
             TextsOfStyle(document, "ExamOptionLabel").Where(label => label.Length > 0));
         Assert.Equal(5 + 8 + 6, AnswerLineRows(document));
+    }
+
+    [Fact]
+    public void Choice_notice_is_rendered_once_before_the_first_section_of_the_pair()
+    {
+        using var document = Open(Renderer.Render(Paper(nameof(DemoExams.OptionalPair), 0), PaperKind.Student));
+        var paragraphs = Paragraphs(document).Select(paragraph => (Style: StyleOf(paragraph), Text: TextOf(paragraph))).ToList();
+
+        // The demo also lists the notice among the exam instructions, so the styled paragraph is the one to find.
+        Assert.Equal(new[] { PaperWording.Arabic.ChoiceNotice(4) }, TextsOfStyle(document, "ExamChoiceNotice"));
+        var notice = paragraphs.FindIndex(paragraph => paragraph.Style == "ExamChoiceNotice");
+        Assert.InRange(notice,
+            paragraphs.FindIndex(paragraph => paragraph.Text == "السؤال الرابع: مسألة") + 1,
+            paragraphs.FindIndex(paragraph => paragraph.Text == "السؤال الخامس: تصميم دائرة توافقية") - 1);
+    }
+
+    [Fact]
+    public void Question_labels_follow_the_paper()
+    {
+        var paper = Paper(nameof(DemoExams.OptionalPair), 1);
+
+        using var document = Open(Renderer.Render(paper, PaperKind.Student));
+
+        Assert.Equal(
+            paper.Sections.SelectMany(section => section.Questions).Select(question => question.PrintedLabel),
+            TextsOfStyle(document, "ExamQuestionNumber"));
+    }
+
+    [Fact]
+    public void Answer_summary_shows_a_heading_per_section()
+    {
+        using var document = Open(Renderer.Render(Paper(nameof(DemoExams.OptionalPair), 1), PaperKind.AnswerKey));
+
+        Assert.Equal(new[] { "السؤال الأول: اختيار من متعدد", "السؤال الثاني: صح أم خطأ" }, TextsOfStyle(document, "ExamSummaryHeading"));
     }
 
     [Fact]
@@ -172,7 +208,7 @@ public class WordExamRendererTests
         Assert.Contains("Answer key – Version B – for examiners only", text);
         Assert.Contains("Answer summary", text);
         Assert.Contains("Model answer:", text);
-        Assert.Equal(paper.AnswerSummary.Count, text.Split(DesignTokens.FilledBubble).Length - 1);
+        Assert.Equal(paper.AnswerSummary.Sum(group => group.Entries.Count), text.Split(DesignTokens.FilledBubble).Length - 1);
     }
 
     [Fact]
@@ -220,6 +256,7 @@ public class WordExamRendererTests
         nameof(DemoExams.ComputerLogicDesign) => DemoExams.ComputerLogicDesign(),
         nameof(DemoExams.ComputerLogicDesignEnglish) => DemoExams.ComputerLogicDesignEnglish(),
         nameof(DemoExams.EdgeCases) => DemoExams.EdgeCases(),
+        nameof(DemoExams.OptionalPair) => DemoExams.OptionalPair(),
         _ => throw new ArgumentOutOfRangeException(nameof(exam)),
     }, version);
 

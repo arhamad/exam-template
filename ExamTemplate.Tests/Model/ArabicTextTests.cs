@@ -43,6 +43,28 @@ public class ArabicTextTests
         Assert.Equal(expected, ArabicText.Errors(count));
 
     [Theory]
+    [InlineData(1, "بند واحد")]
+    [InlineData(2, "بندان")]
+    [InlineData(3, "3 بنود")]
+    [InlineData(33, "33 بندًا")]
+    [InlineData(100, "100 بند")]
+    public void Item_counts_follow_arabic_counted_noun_rules(int count, string expected) =>
+        Assert.Equal(expected, ArabicText.Items(count));
+
+    [Theory]
+    [InlineData(1, "الأول")]
+    [InlineData(2, "الثاني")]
+    [InlineData(5, "الخامس")]
+    [InlineData(10, "العاشر")]
+    [InlineData(11, "الحادي عشر")]
+    [InlineData(12, "الثاني عشر")]
+    [InlineData(19, "التاسع عشر")]
+    [InlineData(20, "العشرون")]
+    [InlineData(21, "21")]
+    public void Ordinals_are_words_up_to_twenty_and_numerals_beyond(int number, string expected) =>
+        Assert.Equal(expected, ArabicText.Ordinal(number));
+
+    [Theory]
     [InlineData("12.50", "12.5")]
     [InlineData("7", "7")]
     [InlineData("0.25", "0.25")]

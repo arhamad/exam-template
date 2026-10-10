@@ -19,7 +19,7 @@ public class WordTemplateDataTests
         Assert.Equal("الفصل الأول 1261 – 2026/2027", data["SemesterLine"]);
         Assert.Equal("ب", data["VersionLetter"]);
         Assert.Equal("النموذج ب", data["FooterVersionText"]);
-        Assert.Equal("8 أسئلة", data["QuestionCountText"]);
+        Assert.Equal("3 أسئلة", data["QuestionCountText"]);
         Assert.Equal("100 علامة", data["TotalMarksText"]);
         Assert.Equal(true, data["HasExamMode"]);
         Assert.Equal(false, data["HasExamDate"]);
@@ -36,7 +36,7 @@ public class WordTemplateDataTests
 
         Assert.Equal("B", student["VersionLetter"]);
         Assert.Equal("Version B", student["FooterVersionText"]);
-        Assert.Equal("8 questions", student["QuestionCountText"]);
+        Assert.Equal("3 questions", student["QuestionCountText"]);
         Assert.Equal("100 marks", student["TotalMarksText"]);
         Assert.Equal("End of questions", student["EndText"]);
         Assert.Equal(" – Good luck", student["EndNote"]);
@@ -80,7 +80,7 @@ public class WordTemplateDataTests
         Assert.Equal(true, data["IsAnswerKey"]);
         Assert.Equal(true, data["HasAnswerSummary"]);
         Assert.Equal("", data["EndNote"]);
-        Assert.Equal(paper.AnswerSummary.Count, Bubbles(questions).Count(bubble => bubble == DesignTokens.FilledBubble));
+        Assert.Equal(paper.AnswerSummary.Sum(group => group.Entries.Count), Bubbles(questions).Count(bubble => bubble == DesignTokens.FilledBubble));
         Assert.DoesNotContain(questions, question => question.ShowAnswerLines);
         Assert.Equal(3, questions.Count(question => question.ShowModelAnswer));
     }
@@ -129,11 +129,53 @@ public class WordTemplateDataTests
         var exam = TestExams.Valid();
         exam.Sections[0].Questions.AddRange(Enumerable.Range(1, 6).Select(i => TestExams.TrueFalse($"عبارة {i}", 1, i % 2 == 0)));
 
-        var rows = (List<SummaryRowItem>)WordTemplateData.Create(Paper(exam, 0), PaperKind.AnswerKey)["SummaryRows"];
+        var group = Assert.Single((List<SummaryGroupItem>)WordTemplateData.Create(Paper(exam, 0), PaperKind.AnswerKey)["SummaryGroups"]);
+        var rows = group.Rows;
 
+        Assert.Equal("القسم الأول", group.Heading);
         Assert.Equal(2, rows.Count);
         Assert.Equal(("1", "ج", "2", "صح"), (rows[0].N1, rows[0].A1, rows[0].N2, rows[0].A2));
         Assert.Equal(("9", "صح", "", ""), (rows[1].N3, rows[1].A3, rows[1].N4, rows[1].A5));
+    }
+
+    [Fact]
+    public void Answer_summary_has_one_group_per_section_with_objective_items()
+    {
+        var groups = (List<SummaryGroupItem>)WordTemplateData.Create(Paper(DemoExams.OptionalPair(), 1), PaperKind.AnswerKey)["SummaryGroups"];
+
+        Assert.Equal(new[] { "السؤال الأول: اختيار من متعدد", "السؤال الثاني: صح أم خطأ" }, groups.Select(group => group.Heading));
+        Assert.All(groups, group => Assert.Equal(2, group.Rows.Count));
+        Assert.Equal(new[] { "1", "2", "3", "4", "5" }, new[] { groups[1].Rows[0].N1, groups[1].Rows[0].N2, groups[1].Rows[0].N3, groups[1].Rows[0].N4, groups[1].Rows[0].N5 });
+    }
+
+    [Fact]
+    public void Question_labels_are_printed_with_a_dot_or_left_empty()
+    {
+        var sections = (List<SectionItem>)WordTemplateData.Create(Paper(DemoExams.OptionalPair(), 0), PaperKind.Student)["Sections"];
+
+        Assert.Equal(new[] { "1.", "2.", "3." }, sections[0].Questions.Take(3).Select(question => question.Label));
+        Assert.Equal(new[] { "أ.", "ب.", "ج.", "د.", "هـ." }, sections[2].Questions.Select(question => question.Label));
+        Assert.Equal("", Assert.Single(sections[3].Questions).Label);
+    }
+
+    [Fact]
+    public void Choice_notice_flag_and_text_come_from_the_section()
+    {
+        var sections = (List<SectionItem>)WordTemplateData.Create(Paper(DemoExams.OptionalPair(), 0), PaperKind.Student)["Sections"];
+
+        Assert.Equal(new[] { false, false, false, false, true, false }, sections.Select(section => section.HasChoiceNotice));
+        Assert.Equal(PaperWording.Arabic.ChoiceNotice(4), sections[4].ChoiceNotice);
+        Assert.All(sections.Where(section => !section.HasChoiceNotice), section => Assert.Equal("", section.ChoiceNotice));
+    }
+
+    [Theory]
+    [InlineData(PaperKind.Student)]
+    [InlineData(PaperKind.AnswerKey)]
+    public void No_value_is_null_in_the_optional_pair_demo(PaperKind kind)
+    {
+        var data = WordTemplateData.Create(Paper(DemoExams.OptionalPair(), 1), kind);
+
+        Assert.All(data, pair => AssertNoNulls(pair.Value, pair.Key));
     }
 
     [Fact]

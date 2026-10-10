@@ -12,7 +12,7 @@
 <article id="@CardId" class="question-card focus-target" tabindex="-1" aria-labelledby="@($"{CardId}-title")">
     <header class="question-header">
         <h3 id="@($"{CardId}-title")" class="question-title">
-            <span class="question-number">@Ui.Text("السؤال", "Question") @Number</span>
+            <span class="question-number">@Ui.Text("السؤال", "Question") <bdi dir="@dir">@Label</bdi></span>
             <span class="type-badge @TypeClass">@Ui.TypeLabel(Question.Type)</span>
         </h3>
 
@@ -25,20 +25,20 @@
                    @onblur="() => Touch(nameof(ExamQuestion.Marks))"/>
         </div>
 
-        <div class="question-actions" role="group" aria-label="@Ui.Text($"إجراءات السؤال {Number}", $"Question {Number} actions")">
+        <div class="question-actions" role="group" aria-label="@Ui.Text($"إجراءات {Name}", $"{Name} actions")">
             <button id="@FieldId("up")" type="button" class="btn btn-sm btn-outline-secondary icon-button"
-                    title="@Ui.Text("نقل للأعلى", "Move up")" aria-label="@Ui.Text($"نقل السؤال {Number} للأعلى", $"Move question {Number} up")" disabled="@isFirst"
+                    title="@Ui.Text("نقل للأعلى", "Move up")" aria-label="@Ui.Text($"نقل {Name} للأعلى", $"Move {Name} up")" disabled="@isFirst"
                     @onclick="() => MoveAsync(-1)">
                 <Icon Name="up"/>
             </button>
             <button id="@FieldId("down")" type="button" class="btn btn-sm btn-outline-secondary icon-button"
-                    title="@Ui.Text("نقل للأسفل", "Move down")" aria-label="@Ui.Text($"نقل السؤال {Number} للأسفل", $"Move question {Number} down")" disabled="@isLast"
+                    title="@Ui.Text("نقل للأسفل", "Move down")" aria-label="@Ui.Text($"نقل {Name} للأسفل", $"Move {Name} down")" disabled="@isLast"
                     @onclick="() => MoveAsync(1)">
                 <Icon Name="down"/>
             </button>
             @if (Exam.Sections.Count > 1)
             {
-                <select class="form-select form-select-sm move-select" aria-label="@Ui.Text($"نقل السؤال {Number} إلى قسم آخر", $"Move question {Number} to another section")"
+                <select class="form-select form-select-sm move-select" aria-label="@Ui.Text($"نقل {Name} إلى قسم آخر", $"Move {Name} to another section")"
                         @onchange="MoveToSectionAsync">
                     <option value="" selected>@Ui.Text("نقل إلى قسم…", "Move to section…")</option>
                     @for (var index = 0; index < Exam.Sections.Count; index++)
@@ -53,12 +53,12 @@
                 </select>
             }
             <button type="button" class="btn btn-sm btn-outline-secondary icon-button" title="@Ui.Text("تكرار السؤال", "Duplicate question")"
-                    aria-label="@Ui.Text($"تكرار السؤال {Number}", $"Duplicate question {Number}")" disabled="@(Exam.QuestionCount() >= ExamLimits.MaxQuestions)"
+                    aria-label="@Ui.Text($"تكرار {Name}", $"Duplicate {Name}")" disabled="@(Exam.QuestionCount() >= ExamLimits.MaxQuestions)"
                     @onclick="DuplicateAsync">
                 <Icon Name="copy"/>
             </button>
             <button type="button" class="btn btn-sm btn-outline-danger icon-button" title="@Ui.Text("حذف السؤال", "Delete question")"
-                    aria-label="@Ui.Text($"حذف السؤال {Number}", $"Delete question {Number}")" @onclick="DeleteAsync">
+                    aria-label="@Ui.Text($"حذف {Name}", $"Delete {Name}")" @onclick="DeleteAsync">
                 <Icon Name="trash"/>
             </button>
         </div>
@@ -148,8 +148,8 @@
     [Parameter, EditorRequired] public ExamSection Section { get; set; } = default!;
     [Parameter, EditorRequired] public ExamQuestion Question { get; set; } = default!;
 
-    /// <summary>Continuous number across all sections.</summary>
-    [Parameter] public int Number { get; set; }
+    /// <summary>The label printed on the paper: "1", "أ", "a", or "" for a lone essay (<see cref="ItemLabels"/>).</summary>
+    [Parameter] public string Label { get; set; } = "";
 
     [Parameter] public int IndexInSection { get; set; }
 
@@ -157,6 +157,11 @@
     [Parameter] public EventCallback<string?> OnStructureChanged { get; set; }
 
     private string CardId => $"q-{Question.Id}";
+
+    /// <summary>«السؤال 1», «السؤال أ» or «السؤال الوحيد», as the validator names it.</summary>
+    private string Name => Label.Length > 0
+        ? Ui.Text($"السؤال {Label}", $"question {Label}")
+        : Ui.Text("السؤال الوحيد", "the only question");
 
     private string TypeClass => Question.Type switch
     {
@@ -250,7 +255,7 @@
 
     private async Task DeleteAsync()
     {
-        if (!await Browser.ConfirmAsync(Ui.Text($"حذف السؤال {Number} نهائيًا؟", $"Delete question {Number} for good?")))
+        if (!await Browser.ConfirmAsync(Ui.Text($"حذف {Name} نهائيًا؟", $"Delete {Name} for good?")))
             return;
 
         var questions = Section.Questions;

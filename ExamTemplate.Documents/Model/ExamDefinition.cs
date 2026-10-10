@@ -15,9 +15,17 @@ public sealed class ExamDefinition
     public int VersionCount { get; set; } = 1;
     public int ShuffleSeed { get; set; }
 
+    /// <summary>The number of items across all sections; the question limit counts these.</summary>
     public int QuestionCount() => Sections.Sum(section => section.Questions.Count);
 
-    public decimal TotalMarks() => Sections.Sum(section => section.TotalMarks());
+    /// <summary>The number of main questions on the paper: every section is one.</summary>
+    public int MainQuestionCount() => Sections.Count;
+
+    /// <summary>Whether the section at <paramref name="sectionIndex"/> is the alternative of the one before it.</summary>
+    public bool IsSecondOfPair(int sectionIndex) => sectionIndex > 0 && Sections[sectionIndex - 1].AlternativeToNext;
+
+    /// <summary>The marks a student can earn: the second section of each alternative pair doesn't count.</summary>
+    public decimal TotalMarks() => Sections.Where((_, index) => !IsSecondOfPair(index)).Sum(section => section.TotalMarks());
 
     /// <summary>A new exam in <paramref name="language"/>, with that language's header defaults and instructions.</summary>
     public static ExamDefinition CreateNew(ExamLanguage language = ExamLanguage.Arabic) =>

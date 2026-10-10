@@ -6,8 +6,8 @@
 <header class="page-header">
     <h1>@Ui.Text("الأسئلة", "Questions")</h1>
     <p class="page-lead">
-        @Ui.Text("تُرقَّم الأسئلة بالتسلسل عبر الأقسام. عند توليد أكثر من نموذج تُخلط الأسئلة داخل قسمها فقط، وتُخلط خيارات أسئلة الاختيار من متعدد ما لم تُثبَّت.",
-            "Questions are numbered continuously across sections. When more than one version is generated, questions are shuffled only within their section, and multiple-choice options are shuffled unless their order is kept.")
+        @Ui.Text("كل قسم سؤال رئيسي على الورقة، ويبدأ ترقيم أسئلته من 1؛ القسم الذي كل أسئلته مقالية تُسمَّى أسئلته بالحروف أ، ب، ج. عند توليد أكثر من نموذج تُخلط الأسئلة داخل قسمها فقط، وتُخلط خيارات أسئلة الاختيار من متعدد ما لم تُثبَّت.",
+            "Each section is one main question on the paper, and its questions are numbered from 1; in a section made only of essays they are lettered a, b, c. When more than one version is generated, questions are shuffled only within their section, and multiple-choice options are shuffled unless their order is kept.")
     </p>
 </header>
 
@@ -26,13 +26,14 @@ else
 {
     <FieldIssues Issues="ExamLevelIssues" Id="issues-Sections"/>
 
-    var firstNumber = 1;
     for (var index = 0; index < exam.Sections.Count; index++)
     {
         var section = exam.Sections[index];
-        <SectionEditor @key="section.Id" Exam="exam" Section="section" Index="index" FirstNumber="firstNumber"
-                       OnStructureChanged="StructureChanged"/>
-        firstNumber += section.Questions.Count;
+        if (exam.IsSecondOfPair(index))
+        {
+            <div class="pair-divider" role="separator" aria-label="@Ui.Text("أو", "or")"><span>@Ui.Text("أو", "OR")</span></div>
+        }
+        <SectionEditor @key="section.Id" Exam="exam" Section="section" Index="index" OnStructureChanged="StructureChanged"/>
     }
 
     @if (exam.Sections.Count == 0)

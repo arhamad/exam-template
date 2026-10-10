@@ -506,6 +506,63 @@ fieldset.question-field, .options-editor {
     margin-block: 1rem;
 }
 
+/* Alternative pairs: the switch row, the generated notice and the "or" between the two sections. */
+.section-pair {
+    display: grid;
+    gap: 0.5rem;
+    margin-block: 0.75rem;
+}
+
+.section-pair .form-check {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.75rem;
+}
+
+.choice-notice-preview {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    padding-block: 0.5rem;
+    padding-inline: 0.75rem;
+    border-inline-start: 3px solid var(--app-primary);
+    border-radius: 0.25rem;
+    background: var(--app-surface-muted);
+}
+
+.choice-notice-preview bdi {
+    font-weight: 600;
+}
+
+.pair-badge {
+    display: inline-block;
+    padding-block: 0.1rem;
+    padding-inline: 0.6rem;
+    border-radius: 1rem;
+    background: rgba(var(--app-accent-rgb), 0.2);
+    color: var(--app-warning);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.pair-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-block: -0.5rem 1rem;
+    color: var(--app-primary-hover);
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.pair-divider::before, .pair-divider::after {
+    content: "";
+    flex: 1;
+    border-block-start: 2px dashed rgba(var(--app-primary-rgb), 0.35);
+}
+
 .question-list {
     display: grid;
     gap: 1rem;

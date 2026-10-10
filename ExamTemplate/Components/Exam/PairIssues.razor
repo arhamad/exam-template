@@ -1,0 +1,11 @@
+@inherits DraftSubscriber
+
+@* Pair errors depend on marks typed in the cards below, so they update live like the section summary. *@
+<FieldIssues Issues="Draft.Validation.ForSection(Section.Id).Where(issue => issue.Field == nameof(ExamSection.AlternativeToNext))" Id="@Id"/>
+
+@code {
+    [Parameter, EditorRequired] public ExamSection Section { get; set; } = default!;
+
+    /// <summary>Referenced by the switch's <c>aria-describedby</c>.</summary>
+    [Parameter, EditorRequired] public string Id { get; set; } = "";
+}

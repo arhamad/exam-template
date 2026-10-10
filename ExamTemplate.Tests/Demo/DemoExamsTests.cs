@@ -35,6 +35,24 @@ public class DemoExamsTests
         Assert.Equal(ExamJson.Serialize(DemoExams.ComputerLogicDesign()), ExamJson.Serialize(DemoExams.ComputerLogicDesign()));
 
     [Fact]
+    public void Optional_pair_demo_is_valid_with_six_questions_33_items_and_100_marks()
+    {
+        var exam = DemoExams.OptionalPair();
+
+        Assert.Empty(ExamValidator.Validate(exam).Issues);
+        Assert.Equal(6, exam.MainQuestionCount());
+        Assert.Equal(33, exam.QuestionCount());
+        Assert.Equal(100m, exam.TotalMarks());
+        var first = Assert.Single(exam.Sections, section => section.AlternativeToNext);
+        Assert.Equal(4, exam.Sections.IndexOf(first));
+        Assert.Equal(first.TotalMarks(), exam.Sections[5].TotalMarks());
+    }
+
+    [Fact]
+    public void Optional_pair_demo_is_deterministic() =>
+        Assert.Equal(ExamJson.Serialize(DemoExams.OptionalPair()), ExamJson.Serialize(DemoExams.OptionalPair()));
+
+    [Fact]
     public void Edge_cases_have_no_validation_errors()
     {
         var report = ExamValidator.Validate(DemoExams.EdgeCases());

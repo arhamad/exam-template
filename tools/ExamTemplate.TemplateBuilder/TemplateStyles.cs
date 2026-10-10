@@ -36,6 +36,7 @@ internal sealed class TemplateStyles(ExamLanguage language)
         new("ExamStudentBlank", StudentFieldSize),
 
         new("ExamSummaryTitle", SummaryTitleSize, Bold: true, After: 2, KeepNext: true),
+        new("ExamSummaryHeading", SummaryHeadingSize, Bold: true, Before: 3, After: 1, KeepNext: true),
         new("ExamSummaryNumber", SummarySize, Bold: true, Align: Align.Center),
         new("ExamSummaryAnswer", SummarySize, Align: Align.Center),
 
@@ -43,6 +44,7 @@ internal sealed class TemplateStyles(ExamLanguage language)
         new("ExamInstructionNumber", InstructionSize, Bold: true, Align: Align.Center, After: SpaceAfterInstruction),
         new("ExamInstruction", InstructionSize, After: SpaceAfterInstruction),
 
+        new("ExamChoiceNotice", ChoiceNoticeSize, Bold: true, Align: Align.Center, Before: 4, After: 2, KeepNext: true),
         new("ExamSectionTitle", SectionTitleSize, Bold: true, KeepNext: true),
         new("ExamSectionInstruction", SectionInstructionSize, Color: MutedColor, Before: 1, KeepNext: true),
         new("ExamSectionMarks", SectionMarksSize, Bold: true, Align: Align.Center, KeepNext: true),

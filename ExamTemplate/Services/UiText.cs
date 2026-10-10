@@ -42,6 +42,8 @@ public sealed class UiText
 
     public string Errors(int count) => IsEnglish ? EnglishText.Errors(count) : ArabicText.Errors(count);
 
+    public string Items(int count) => IsEnglish ? EnglishText.Items(count) : ArabicText.Items(count);
+
     public string TypeLabel(QuestionType type) => IsEnglish ? EnglishText.TypeLabel(type) : ArabicText.TypeLabel(type);
 
     public string TrueFalse(bool value) => IsEnglish ? EnglishText.TrueFalse(value) : ArabicText.TrueFalse(value);

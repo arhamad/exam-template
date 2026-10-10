@@ -11,6 +11,9 @@ public static class EnglishText
 
     public static string Errors(int count) => Counted(count, "error", "errors");
 
+    /// <summary>Items of a main question, as counted in the editor ("33 items").</summary>
+    public static string Items(int count) => Counted(count, "item", "items");
+
     public static string TypeLabel(QuestionType type) => type switch
     {
         QuestionType.MultipleChoice => "Multiple choice",

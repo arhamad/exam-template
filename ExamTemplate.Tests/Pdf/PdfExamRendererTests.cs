@@ -21,6 +21,8 @@ public class PdfExamRendererTests
         { nameof(DemoExams.EdgeCases), 1, PaperKind.AnswerKey },
         { nameof(DemoExams.ComputerLogicDesignEnglish), 0, PaperKind.Student },
         { nameof(DemoExams.ComputerLogicDesignEnglish), 1, PaperKind.AnswerKey },
+        { nameof(DemoExams.OptionalPair), 0, PaperKind.Student },
+        { nameof(DemoExams.OptionalPair), 1, PaperKind.AnswerKey },
     };
 
     [Theory]
@@ -44,6 +46,14 @@ public class PdfExamRendererTests
     }
 
     [Fact]
+    public void Optional_pair_demo_prints_on_a_few_pages()
+    {
+        var pages = Renderer.RenderPageImages(Paper(nameof(DemoExams.OptionalPair), 0), PaperKind.Student, dpi: 24);
+
+        Assert.InRange(pages.Count, 3, 8);
+    }
+
+    [Fact]
     public void Long_exams_flow_across_many_pages()
     {
         var exam = TestExams.Valid();
@@ -59,6 +69,7 @@ public class PdfExamRendererTests
         nameof(DemoExams.ComputerLogicDesign) => DemoExams.ComputerLogicDesign(),
         nameof(DemoExams.ComputerLogicDesignEnglish) => DemoExams.ComputerLogicDesignEnglish(),
         nameof(DemoExams.EdgeCases) => DemoExams.EdgeCases(),
+        nameof(DemoExams.OptionalPair) => DemoExams.OptionalPair(),
         _ => throw new ArgumentOutOfRangeException(nameof(exam)),
     }, version);
 }

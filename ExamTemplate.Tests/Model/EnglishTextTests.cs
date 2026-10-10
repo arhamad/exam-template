@@ -25,6 +25,12 @@ public class EnglishTextTests
         Assert.Equal(errors, EnglishText.Errors(count));
     }
 
+    [Theory]
+    [InlineData(1, "1 item")]
+    [InlineData(33, "33 items")]
+    public void Item_counts_are_singular_only_for_one(int count, string expected) =>
+        Assert.Equal(expected, EnglishText.Items(count));
+
     [Fact]
     public void Type_labels_and_true_false_are_english()
     {

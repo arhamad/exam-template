@@ -35,18 +35,29 @@ public static class ExamPaperBuilder
     {
         var wording = PaperWording.For(exam.Language);
         var sections = new List<PaperSection>(exam.Sections.Count);
-        var number = 0;
 
-        foreach (var section in exam.Sections)
+        for (var index = 0; index < exam.Sections.Count; index++)
         {
-            var questions = new List<PaperQuestion>(section.Questions.Count);
-            foreach (var question in Shuffle(section.Questions, exam.ShuffleSeed, versionIndex, SeedPurpose.QuestionOrder, section.Id))
-                questions.Add(BuildQuestion(question, ++number, exam.ShuffleSeed, versionIndex, wording));
+            var section = exam.Sections[index];
+
+            // Labels restart in every section and, like option labels, are assigned after shuffling.
+            var labels = ItemLabels.For(section, exam.Language);
+            var questions = Shuffle(section.Questions, exam.ShuffleSeed, versionIndex, SeedPurpose.QuestionOrder, section.Id)
+                .Select((question, position) => BuildQuestion(question, labels.Label(position), exam.ShuffleSeed, versionIndex, wording))
+                .ToList();
 
             var marks = section.TotalMarks();
-            sections.Add(new PaperSection(Clean(section.Title), Clean(section.Instruction), marks, wording.Marks(marks), questions));
+            sections.Add(new PaperSection(
+                wording.SectionName(index),
+                Clean(section.Title),
+                Clean(section.Instruction),
+                section.AlternativeToNext ? wording.ChoiceNotice(index) : "",
+                marks,
+                wording.Marks(marks),
+                questions));
         }
 
+        var mainQuestionCount = exam.MainQuestionCount();
         var totalMarks = exam.TotalMarks();
         return new ExamPaper(
             exam.Language,
@@ -56,14 +67,14 @@ public static class ExamPaperBuilder
             BuildHeader(exam.Header),
             exam.Instructions.Select(Clean).Where(instruction => instruction.Length > 0).ToList(),
             sections,
-            number,
-            wording.Questions(number),
+            mainQuestionCount,
+            wording.Questions(mainQuestionCount),
             totalMarks,
             wording.Marks(totalMarks),
             BuildAnswerSummary(sections));
     }
 
-    private static PaperQuestion BuildQuestion(ExamQuestion question, int number, int shuffleSeed, int versionIndex, PaperWording wording)
+    private static PaperQuestion BuildQuestion(ExamQuestion question, string label, int shuffleSeed, int versionIndex, PaperWording wording)
     {
         IEnumerable<ExamOption> orderedOptions = question.Type != QuestionType.MultipleChoice ? []
             : question.KeepOptionOrder ? question.Options
@@ -83,7 +94,7 @@ public static class ExamPaperBuilder
 
         return new PaperQuestion(
             question.Id,
-            number,
+            label,
             question.Type,
             Clean(question.Text),
             Clean(question.Note),
@@ -103,16 +114,21 @@ public static class ExamPaperBuilder
         return $"{correct.Label}) {correct.Text}";
     }
 
+    // One group per section with objective items, since labels restart in every section.
     // A true/false answer is its word; a multiple-choice answer is the correct option's label.
-    private static List<AnswerSummaryEntry> BuildAnswerSummary(IEnumerable<PaperSection> sections) =>
+    private static List<AnswerSummaryGroup> BuildAnswerSummary(IEnumerable<PaperSection> sections) =>
         sections
-            .SelectMany(section => section.Questions)
-            .Where(question => question.Type != QuestionType.Essay)
-            .Select(question => new AnswerSummaryEntry(
-                question.Number,
-                question.Type == QuestionType.TrueFalse
-                    ? question.CorrectAnswerText
-                    : question.Options.Single(option => option.IsCorrect).Label))
+            .Select(section => new AnswerSummaryGroup(
+                section.SummaryHeading,
+                section.Questions
+                    .Where(question => question.Type != QuestionType.Essay)
+                    .Select(question => new AnswerSummaryEntry(
+                        question.Label,
+                        question.Type == QuestionType.TrueFalse
+                            ? question.CorrectAnswerText
+                            : question.Options.Single(option => option.IsCorrect).Label))
+                    .ToList()))
+            .Where(group => group.Entries.Count > 0)
             .ToList();
 
     private static PaperHeader BuildHeader(ExamHeader header) => new(
